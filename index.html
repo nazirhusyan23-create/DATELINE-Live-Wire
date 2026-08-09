@@ -182,7 +182,7 @@
 
     <!-- Ad slot: top banner. Replace ca-pub-ADSENSE_CLIENT_ID and the
          data-ad-slot value with your real AdSense IDs once approved. -->
-    <div class="mb-8 flex justify-center">
+    <div class="mb-8 w-full">
       <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-ADSENSE_CLIENT_ID" data-ad-slot="0000000001" data-ad-format="auto" data-full-width-responsive="true"></ins>
     </div>
     <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
@@ -222,7 +222,7 @@
     <section id="featured" class="hidden mb-10"></section>
 
     <!-- Ad slot: in-content, between the featured story and the grid -->
-    <div class="mb-10 flex justify-center">
+    <div class="mb-10 w-full">
       <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-ADSENSE_CLIENT_ID" data-ad-slot="0000000002" data-ad-format="auto" data-full-width-responsive="true"></ins>
     </div>
     <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
@@ -265,18 +265,20 @@
   </div>
 
   <!-- Ad slot: bottom banner, above the footer -->
-  <div class="max-w-7xl w-full mx-auto px-4 sm:px-6 flex justify-center">
+  <div class="max-w-7xl w-full mx-auto px-4 sm:px-6">
     <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-ADSENSE_CLIENT_ID" data-ad-slot="0000000003" data-ad-format="auto" data-full-width-responsive="true"></ins>
   </div>
   <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
 
   <!-- ============ FOOTER ============ -->
   <footer class="border-t border-hair mt-10">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
       <p class="font-display text-sm text-mute">DATELINE — an independent live-wire reader.</p>
-      <div class="flex items-center gap-4">
-        <a href="/about.html" class="font-mono text-[11px] text-mute hover:text-brass transition-colors">About</a>
-        <a href="/privacy.html" class="font-mono text-[11px] text-mute hover:text-brass transition-colors">Privacy</a>
+      <div class="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
+        <div class="flex items-center gap-4">
+          <a href="/about.html" class="font-mono text-[11px] text-mute hover:text-brass transition-colors">About</a>
+          <a href="/privacy.html" class="font-mono text-[11px] text-mute hover:text-brass transition-colors">Privacy</a>
+        </div>
         <p class="font-mono text-[11px] text-mute/70 text-center sm:text-right">
           Headlines sourced live from public Google News RSS feeds · Not affiliated with any publisher.
         </p>
