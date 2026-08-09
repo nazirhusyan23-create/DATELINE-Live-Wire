@@ -139,12 +139,79 @@ function splitSourceFromTitle(title, sourceTag) {
   return { headline: title, source: sourceTag || "" };
 }
 
-// Try to pull an image out of the RSS item's description/content, if any
+// Try to pull an image out of the RSS item's description/content, if any.
+// Google News descriptions basically never contain one, but this is free
+// to check and other RSS sources sometimes do embed one.
 function extractImage(item) {
   if (item.thumbnail) return item.thumbnail;
   const html = item.description || item.content || "";
   const m = html.match(/<img[^>]+src="([^">]+)"/i);
   return m ? m[1] : null;
+}
+
+function escapeAttr(str) {
+  return String(str || "").replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+}
+
+// A styled monogram tile used while a thumbnail is loading, or as the
+// permanent fallback when /api/thumb can't find a real image for a story.
+function placeholderThumb(source) {
+  const initial = (source || "?").trim().charAt(0).toUpperCase() || "?";
+  return `<div class="thumb-placeholder w-full h-full grid place-items-center"><span class="font-display text-3xl text-brass/30 select-none">${initial}</span></div>`;
+}
+
+// ---------- thumbnails (best-effort, via /api/thumb) ----------
+const thumbCache = new Map();     // link -> image url | null (null = tried, none found)
+const thumbInFlight = new Map();  // link -> in-progress promise
+let thumbObserver = null;
+
+async function getThumbnail(link) {
+  if (!link) return null;
+  if (thumbCache.has(link)) return thumbCache.get(link);
+  if (thumbInFlight.has(link)) return thumbInFlight.get(link);
+
+  const promise = fetch(`/api/thumb?url=${encodeURIComponent(link)}`)
+    .then(r => (r.ok ? r.json() : { image: null }))
+    .then(d => { const img = d.image || null; thumbCache.set(link, img); return img; })
+    .catch(() => { thumbCache.set(link, null); return null; })
+    .finally(() => thumbInFlight.delete(link));
+
+  thumbInFlight.set(link, promise);
+  return promise;
+}
+
+// Lazily fetch a real thumbnail only once a card actually scrolls into
+// view — avoids firing 30-40 requests at once on every page load.
+function observeThumbSlot(slotEl) {
+  if (!thumbObserver) {
+    thumbObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        thumbObserver.unobserve(entry.target);
+        fillThumbSlot(entry.target);
+      });
+    }, { rootMargin: "300px" });
+  }
+  thumbObserver.observe(slotEl);
+}
+
+async function fillThumbSlot(slotEl) {
+  const link = slotEl.dataset.link;
+  const imgClass = slotEl.dataset.imgClass || "w-full h-full object-cover";
+  if (!link) return;
+
+  const cached = thumbCache.get(link);
+  if (cached === null) return; // already tried, nothing found — keep placeholder
+
+  const image = cached || (await getThumbnail(link));
+  if (!image || !slotEl.isConnected) return;
+
+  const img = new Image();
+  img.alt = "";
+  img.className = imgClass;
+  img.onload = () => { slotEl.innerHTML = ""; slotEl.appendChild(img); };
+  img.onerror = () => { /* broken image — keep placeholder */ };
+  img.src = image;
 }
 
 function categoryMeta(id) {
@@ -212,13 +279,10 @@ function renderArticles() {
   // Featured (only for non-search, first load)
   if (!state.query) {
     featuredEl.classList.remove("hidden");
-    const img = extractImage(first);
     featuredEl.innerHTML = `
       <article data-idx="0" class="article-card group cursor-pointer grid md:grid-cols-2 gap-0 rounded-xl overflow-hidden border border-hair bg-panel hover:border-brass/40 transition-colors">
-        <div class="relative h-56 md:h-full bg-panel2 overflow-hidden">
-          ${img
-            ? `<img src="${img}" alt="" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full grid place-items-center text-mute font-mono text-xs\\'>NO IMAGE</div>'"/>`
-            : `<div class="w-full h-full grid place-items-center text-mute font-mono text-xs">NO IMAGE</div>`}
+        <div class="relative h-56 md:h-full bg-panel2 overflow-hidden thumb-slot" data-link="${escapeAttr(first.link)}" data-img-class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+          ${placeholderThumb(first._source)}
           <span class="absolute top-3 left-3 bg-ink/90 text-brass font-mono text-[10px] uppercase tracking-[0.2em] px-2.5 py-1 rounded-full border border-brass/30">Featured</span>
         </div>
         <div class="p-6 flex flex-col justify-center">
@@ -229,20 +293,18 @@ function renderArticles() {
       </article>
     `;
     featuredEl.querySelector(".article-card").addEventListener("click", () => openModal(first));
+    observeThumbSlot(featuredEl.querySelector(".thumb-slot"));
   } else {
     featuredEl.classList.add("hidden");
   }
 
   const items = state.query ? state.articles : rest;
   gridEl.innerHTML = items.map((a, i) => {
-    const img = extractImage(a);
     const realIdx = state.query ? i : i + 1;
     return `
       <article data-idx="${realIdx}" class="article-card group cursor-pointer rounded-xl overflow-hidden border border-hair bg-panel hover:border-brass/40 transition-colors flex flex-col">
-        <div class="relative h-40 bg-panel2 overflow-hidden">
-          ${img
-            ? `<img src="${img}" alt="" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full grid place-items-center text-mute font-mono text-[10px]\\'>NO IMAGE</div>'"/>`
-            : `<div class="w-full h-full grid place-items-center text-mute font-mono text-[10px]">NO IMAGE</div>`}
+        <div class="relative h-40 bg-panel2 overflow-hidden thumb-slot" data-link="${escapeAttr(a.link)}" data-img-class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+          ${placeholderThumb(a._source)}
         </div>
         <div class="p-4 flex flex-col flex-1">
           <span class="font-mono text-[10px] uppercase tracking-[0.15em] text-brass mb-2">${a._source} · ${a._timeAgo}</span>
@@ -257,6 +319,7 @@ function renderArticles() {
     const idx = Number(card.dataset.idx);
     card.addEventListener("click", () => openModal(state.articles[idx]));
   });
+  gridEl.querySelectorAll(".thumb-slot").forEach(observeThumbSlot);
 }
 
 // ---------- ticker ----------
@@ -268,18 +331,21 @@ function renderTicker(articles) {
 }
 
 // ---------- modal ----------
-function openModal(article) {
+async function openModal(article) {
   modalCategory.textContent = categoryMeta(state.category).label;
-  const img = extractImage(article);
-  modalImageWrap.innerHTML = img
-    ? `<img src="${img}" alt="" class="w-full h-56 object-cover" onerror="this.parentElement.innerHTML=''"/>`
-    : "";
+  modalImageWrap.innerHTML = "";
   modalTitle.textContent = article._headline;
   modalMeta.textContent = `${article._source} · ${timeAgo(article.pubDate)}`;
   modalDesc.textContent = article._desc || "No summary available for this story — open the full article to read more.";
   modalLink.href = article.link || "#";
   modalOverlay.classList.remove("hidden");
   document.body.style.overflow = "hidden";
+
+  const staticImg = extractImage(article);
+  const image = staticImg || (await getThumbnail(article.link));
+  if (image && modalOverlay.classList.contains("hidden") === false) {
+    modalImageWrap.innerHTML = `<img src="${image}" alt="" class="w-full h-56 object-cover" onerror="this.parentElement.innerHTML=''"/>`;
+  }
 }
 function closeModal() {
   modalOverlay.classList.add("hidden");
