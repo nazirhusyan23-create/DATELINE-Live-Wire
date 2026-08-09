@@ -528,6 +528,16 @@ if (weatherCityForm) {
   });
 }
 
+// ---------- header shadow on scroll ----------
+const siteHeader = document.getElementById("siteHeader");
+if (siteHeader) {
+  const toggleHeaderShadow = () => {
+    siteHeader.classList.toggle("is-scrolled", window.scrollY > 8);
+  };
+  window.addEventListener("scroll", toggleHeaderShadow, { passive: true });
+  toggleHeaderShadow();
+}
+
 // ---------- init ----------
 renderCategories();
 loadFeed();
