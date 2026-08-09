@@ -13,9 +13,12 @@ Files
 ```
 news-app/
 ├── index.html      ← poora markup + Tailwind config (CDN, no build step)
-├── app.js          ← saara frontend logic: fetch, render, search, weather, ticker, modal
+├── app.js          ← saara frontend logic: fetch, render, search, weather, ticker, modal, thumbnails
+├── about.html       ← About page (AdSense ke liye original content yahan likhein)
+├── privacy.html      ← Privacy Policy (AdSense ke liye zaroori)
 ├── api/
-│   └── news.js     ← ek chhoti Vercel serverless function (news feed fetch karti hai)
+│   ├── news.js      ← news feed fetch karti hai
+│   └── thumb.js      ← har article ke liye best-effort real thumbnail fetch karti hai
 ├── package.json     ← minimal manifest, Vercel ko function ka module type batati hai
 └── README.md        ← yeh file
 ```
@@ -58,6 +61,39 @@ Pehle wala version third-party CORS proxies (allorigins, corsproxy.io) par depen
 Data source badalna chahein toh
 `api/news.js` ke andar `FEEDS` object mein har category ka RSS URL hai. Chahen toh koi bhi doosri public RSS feed (BBC, Al Jazeera, Dawn, etc.) ka URL wahan daal dein aur `app.js` ke `CATEGORIES` array mein matching `id`/`label` add kar dein — baaki app automatically kaam karti rahegi.
 Weather ka source badalna ho toh `app.js` mein `fetchWeatherFor()` function ke andar Open-Meteo ka URL hai — koi bhi doosra free weather API us jagah swap kiya ja sakta hai.
+Article thumbnails
+Google News RSS doesn't include images in its feed data at all — never did.
+To show real thumbnails anyway, `api/thumb.js` (a second small serverless
+function) follows each article's link server-side and reads the
+publisher's `og:image` meta tag, the same tag Facebook/Twitter use for link
+previews. The frontend fetches this lazily (only for cards actually
+scrolled into view) and caches results in memory.
+This is best-effort, not guaranteed. Most publishers work fine. Some
+Google News redirect links land on a page that needs JavaScript to reach
+the real article, so a handful of stories will keep the styled monogram
+placeholder instead of a photo — that's expected, not a bug.
+Setup: after adding `api/thumb.js` to your `api/` folder alongside
+`news.js`, redeploy — no config needed.
+Setting up Google AdSense
+Ad slots are already in `index.html` (top banner, in-content, bottom
+banner), inert by default. To turn them on:
+Apply at google.com/adsense.
+Once approved, replace every `ca-pub-ADSENSE_CLIENT_ID` in `index.html`
+with your real publisher ID, and uncomment the `adsbygoogle.js` script
+tag near the top of `<head>`.
+Replace the placeholder `data-ad-slot` values (`0000000001` etc.) with
+real ad unit IDs from your AdSense dashboard.
+Important — read before applying: Google AdSense generally does not
+approve sites that are just republished RSS headlines with links out,
+since it doesn't count as original content. To improve your odds:
+Write real content on `about.html` (already scaffolded, currently has
+placeholder text — fill it in with your own words).
+Fill in `privacy.html` with your actual contact info before publishing —
+AdSense requires a real privacy policy.
+Consider adding something original the aggregator itself doesn't have:
+daily commentary, curated picks, a "why this matters" blurb per story,
+etc. Pure aggregation is the single most common AdSense rejection reason
+for sites like this one.
 Tech stack
 Tailwind CSS (CDN — no build step)
 Vanilla JavaScript (no framework, no bundler)
