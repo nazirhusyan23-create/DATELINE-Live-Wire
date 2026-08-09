@@ -14,6 +14,21 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
+<!--
+  Google AdSense
+  ================
+  1. Apply at https://www.google.com/adsense — you'll need real content
+     (see README) beyond just RSS headlines for approval.
+  2. Once you have a publisher ID (looks like "ca-pub-1234567890123456"),
+     replace ADSENSE_CLIENT_ID in the script src below AND in every
+     data-ad-client attribute further down this file.
+  3. Uncomment the script tag. Leaving it commented (or with the
+     placeholder ID) keeps the ad slots inert — no console errors, no ads.
+-->
+<!--
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-ADSENSE_CLIENT_ID" crossorigin="anonymous"></script>
+-->
+
 <script>
   tailwind.config = {
     theme: {
@@ -93,6 +108,13 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+
+  /* Thumbnail placeholder — shown while a real image loads, or permanently
+     when no image could be found for that story. Styled to look intentional. */
+  .thumb-placeholder {
+    background-color: #1A1D22;
+    background-image: repeating-linear-gradient(135deg, rgba(201,162,75,0.06) 0px, rgba(201,162,75,0.06) 1px, transparent 1px, transparent 13px);
+  }
 </style>
 </head>
 
@@ -158,6 +180,13 @@
   <!-- ============ MAIN ============ -->
   <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8">
 
+    <!-- Ad slot: top banner. Replace ca-pub-ADSENSE_CLIENT_ID and the
+         data-ad-slot value with your real AdSense IDs once approved. -->
+    <div class="mb-8 flex justify-center">
+      <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-ADSENSE_CLIENT_ID" data-ad-slot="0000000001" data-ad-format="auto" data-full-width-responsive="true"></ins>
+    </div>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+
     <!-- Weather -->
     <section class="mb-8 rounded-xl border border-hair bg-panel px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-4 sm:justify-between">
       <div id="weatherBody" class="min-h-[3rem] flex items-center">
@@ -191,6 +220,12 @@
 
     <!-- Featured story -->
     <section id="featured" class="hidden mb-10"></section>
+
+    <!-- Ad slot: in-content, between the featured story and the grid -->
+    <div class="mb-10 flex justify-center">
+      <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-ADSENSE_CLIENT_ID" data-ad-slot="0000000002" data-ad-format="auto" data-full-width-responsive="true"></ins>
+    </div>
+    <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
 
     <!-- Loading skeletons -->
     <section id="skeletons" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></section>
@@ -229,13 +264,23 @@
     </div>
   </div>
 
+  <!-- Ad slot: bottom banner, above the footer -->
+  <div class="max-w-7xl w-full mx-auto px-4 sm:px-6 flex justify-center">
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-ADSENSE_CLIENT_ID" data-ad-slot="0000000003" data-ad-format="auto" data-full-width-responsive="true"></ins>
+  </div>
+  <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+
   <!-- ============ FOOTER ============ -->
   <footer class="border-t border-hair mt-10">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-3">
       <p class="font-display text-sm text-mute">DATELINE — an independent live-wire reader.</p>
-      <p class="font-mono text-[11px] text-mute/70 text-center sm:text-right">
-        Headlines sourced live from public Google News RSS feeds · Not affiliated with any publisher.
-      </p>
+      <div class="flex items-center gap-4">
+        <a href="/about.html" class="font-mono text-[11px] text-mute hover:text-brass transition-colors">About</a>
+        <a href="/privacy.html" class="font-mono text-[11px] text-mute hover:text-brass transition-colors">Privacy</a>
+        <p class="font-mono text-[11px] text-mute/70 text-center sm:text-right">
+          Headlines sourced live from public Google News RSS feeds · Not affiliated with any publisher.
+        </p>
+      </div>
     </div>
   </footer>
 
