@@ -1,0 +1,7 @@
+{
+  "name": "dateline-live-wire",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "DATELINE — a free, single-backend-function live news & weather reader (HTML + Tailwind + vanilla JS, deployed on Vercel)."
+}

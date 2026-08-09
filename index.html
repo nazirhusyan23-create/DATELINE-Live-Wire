@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DATELINE — Live Wire</title>
+<meta name="description" content="A live news and current affairs reader — top headlines across World, Technology, Sports and Business." />
+
+<!-- Tailwind (CDN, no build step needed) -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Fonts: Fraunces (display serif) / Inter (body) / IBM Plex Mono (utility / wire) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          ink:      '#0B0C0E',
+          panel:    '#131519',
+          panel2:   '#1A1D22',
+          hair:     '#26292F',
+          paper:    '#EDEAE2',
+          mute:     '#8B8E94',
+          brass:    '#C9A24B',
+          brassdim: '#8A7434',
+          wire:     '#B23A2E',
+        },
+        fontFamily: {
+          display: ['"Fraunces"', 'serif'],
+          body:    ['"Inter"', 'sans-serif'],
+          mono:    ['"IBM Plex Mono"', 'monospace'],
+        },
+      }
+    }
+  }
+</script>
+
+<style>
+  html { scroll-behavior: smooth; }
+  body { background-color: #0B0C0E; }
+
+  /* Ticker tape marquee */
+  .ticker-track {
+    display: flex;
+    width: max-content;
+    animation: ticker-scroll 38s linear infinite;
+  }
+  .ticker-track:hover { animation-play-state: paused; }
+  @keyframes ticker-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ticker-track { animation: none; }
+    html { scroll-behavior: auto; }
+  }
+
+  /* Focus visibility */
+  a:focus-visible, button:focus-visible, input:focus-visible {
+    outline: 2px solid #C9A24B;
+    outline-offset: 2px;
+  }
+
+  ::selection { background: #C9A24B; color: #0B0C0E; }
+
+  /* Custom scrollbar for category rail on mobile */
+  .cat-rail::-webkit-scrollbar { height: 0px; }
+
+  .skeleton {
+    background: linear-gradient(100deg, #16181D 30%, #1F2229 45%, #16181D 60%);
+    background-size: 200% 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+  @keyframes shimmer {
+    0% { background-position: 150% 0; }
+    100% { background-position: -50% 0; }
+  }
+
+  .clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style>
+</head>
+
+<body class="bg-ink text-paper font-body antialiased min-h-screen flex flex-col">
+
+  <!-- ============ HEADER ============ -->
+  <header class="sticky top-0 z-40 bg-ink/95 backdrop-blur border-b border-hair">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6">
+
+      <!-- Top row: wordmark, date, search -->
+      <div class="flex items-center justify-between gap-4 py-4">
+        <div class="flex items-baseline gap-2">
+          <span class="font-display text-2xl sm:text-3xl font-semibold tracking-tight text-paper">DATELINE</span>
+          <span class="hidden sm:inline font-mono text-[11px] text-brass tracking-[0.2em] uppercase">Live Wire</span>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <span id="clock" class="hidden md:block font-mono text-xs text-mute"></span>
+          <button id="refreshBtn" title="Refresh feed" class="grid place-items-center w-9 h-9 rounded-full border border-hair text-mute hover:text-brass hover:border-brass/50 transition-colors">
+            <svg id="refreshIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4 transition-transform duration-500">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12a7.5 7.5 0 0113-5.03M19.5 12a7.5 7.5 0 01-13 5.03M4.5 5.5v3h3M19.5 18.5v-3h-3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Search -->
+      <div class="pb-4">
+        <form id="searchForm" class="relative max-w-xl">
+          <input
+            id="searchInput"
+            type="text"
+            placeholder="Search the wire — e.g. elections, cricket, markets…"
+            class="w-full bg-panel border border-hair rounded-full pl-11 pr-4 py-2.5 text-sm text-paper placeholder:text-mute/70 focus:border-brass/60 outline-none transition-colors"
+          />
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-mute">
+            <circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M21 21l-4.3-4.3"/>
+          </svg>
+        </form>
+      </div>
+
+      <!-- Category rail -->
+      <nav class="cat-rail flex items-center gap-1 overflow-x-auto pb-3 -mx-1 px-1" style="scrollbar-width:none;">
+        <!-- filled by JS -->
+      </nav>
+    </div>
+  </header>
+
+  <!-- ============ TICKER ============ -->
+  <div class="bg-brass/95 text-ink overflow-hidden select-none">
+    <div class="max-w-7xl mx-auto flex items-center">
+      <span class="shrink-0 font-mono text-[11px] font-bold tracking-[0.2em] uppercase bg-ink text-brass px-3 py-1.5 z-10">
+        ● Live
+      </span>
+      <div class="overflow-hidden flex-1">
+        <div id="tickerTrack" class="ticker-track py-1.5">
+          <span class="px-6 font-mono text-xs whitespace-nowrap">Loading the wire…</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MAIN ============ -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8">
+
+    <!-- Weather -->
+    <section class="mb-8 rounded-xl border border-hair bg-panel px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-4 sm:justify-between">
+      <div id="weatherBody" class="min-h-[3rem] flex items-center">
+        <span class="font-mono text-xs text-mute">Finding your location…</span>
+      </div>
+      <form id="weatherCityForm" class="relative shrink-0 w-full sm:w-56">
+        <input
+          id="weatherCityInput"
+          type="text"
+          placeholder="Change city…"
+          class="w-full bg-panel2 border border-hair rounded-full pl-4 pr-9 py-2 text-xs text-paper placeholder:text-mute/70 focus:border-brass/60 outline-none transition-colors"
+        />
+        <button type="submit" aria-label="Search city" class="absolute right-2.5 top-1/2 -translate-y-1/2 text-mute hover:text-brass transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3.5 h-3.5">
+            <circle cx="11" cy="11" r="7"/><path stroke-linecap="round" d="M21 21l-4.3-4.3"/>
+          </svg>
+        </button>
+      </form>
+    </section>
+
+    <!-- Section label -->
+    <div class="flex items-baseline justify-between mb-6">
+      <h1 id="sectionTitle" class="font-display text-xl sm:text-2xl font-medium text-paper">Top Headlines</h1>
+      <span id="resultCount" class="font-mono text-[11px] text-mute uppercase tracking-wider"></span>
+    </div>
+
+    <!-- Error banner -->
+    <div id="errorBanner" class="hidden mb-6 border border-wire/40 bg-wire/10 text-paper/90 rounded-lg px-4 py-3 text-sm">
+      <p id="errorText"></p>
+    </div>
+
+    <!-- Featured story -->
+    <section id="featured" class="hidden mb-10"></section>
+
+    <!-- Loading skeletons -->
+    <section id="skeletons" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></section>
+
+    <!-- Article grid -->
+    <section id="grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></section>
+
+    <!-- Empty state -->
+    <div id="emptyState" class="hidden text-center py-20">
+      <p class="font-display text-lg text-paper mb-1">Nothing on the wire for that.</p>
+      <p class="text-mute text-sm">Try another search term or pick a category above.</p>
+    </div>
+
+  </main>
+
+  <!-- ============ ARTICLE MODAL ============ -->
+  <div id="modalOverlay" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm px-4 py-8 overflow-y-auto">
+    <div id="modalCard" class="max-w-2xl mx-auto bg-panel border border-hair rounded-xl overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-3 border-b border-hair">
+        <span id="modalCategory" class="font-mono text-[11px] uppercase tracking-[0.2em] text-brass"></span>
+        <button id="modalClose" class="w-8 h-8 grid place-items-center rounded-full text-mute hover:text-paper hover:bg-panel2 transition-colors" aria-label="Close">✕</button>
+      </div>
+      <div id="modalImageWrap"></div>
+      <div class="p-5 sm:p-6">
+        <h2 id="modalTitle" class="font-display text-xl sm:text-2xl font-medium text-paper leading-snug mb-2"></h2>
+        <p id="modalMeta" class="font-mono text-[11px] text-mute mb-4"></p>
+        <p id="modalDesc" class="text-paper/85 text-sm leading-relaxed mb-6"></p>
+        <a id="modalLink" href="#" target="_blank" rel="noopener noreferrer"
+           class="inline-flex items-center gap-2 bg-brass text-ink font-semibold text-sm px-5 py-2.5 rounded-full hover:bg-brass/90 transition-colors">
+          Read full story
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3.5 h-3.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M17 7H8M17 7v9"/>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="border-t border-hair mt-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <p class="font-display text-sm text-mute">DATELINE — an independent live-wire reader.</p>
+      <p class="font-mono text-[11px] text-mute/70 text-center sm:text-right">
+        Headlines sourced live from public Google News RSS feeds · Not affiliated with any publisher.
+      </p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
