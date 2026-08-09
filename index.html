@@ -83,6 +83,12 @@
 
   ::selection { background: #C9A24B; color: #0B0C0E; }
 
+  /* Header gets a visible shadow once the page is scrolled, so it reads
+     as a distinct layer above the content instead of blending into it. */
+  #siteHeader.is-scrolled {
+    box-shadow: 0 8px 24px -12px rgba(0,0,0,0.6);
+  }
+
   /* Custom scrollbar for category rail on mobile */
   .cat-rail::-webkit-scrollbar { height: 0px; }
 
@@ -121,7 +127,7 @@
 <body class="bg-ink text-paper font-body antialiased min-h-screen flex flex-col">
 
   <!-- ============ HEADER ============ -->
-  <header class="sticky top-0 z-40 bg-ink/95 backdrop-blur border-b border-hair">
+  <header id="siteHeader" class="sticky top-0 z-40 bg-panel/95 backdrop-blur border-b border-hair transition-shadow duration-200">
     <div class="max-w-7xl mx-auto px-4 sm:px-6">
 
       <!-- Top row: wordmark, date, search -->
