@@ -429,10 +429,10 @@ async function detectLocationAndLoadWeather() {
 
   // 2) Fallback: rough location from IP address
   try {
-    const res = await fetch("https://ipapi.co/json/");
+    const res = await fetch("https://ipwho.is/");
     const data = await res.json();
-    if (data.latitude && data.longitude) {
-      await fetchWeatherFor(data.latitude, data.longitude, `${data.city || ""}${data.city ? ", " : ""}${data.country_name || ""}`);
+    if (data.success !== false && data.latitude && data.longitude) {
+      await fetchWeatherFor(data.latitude, data.longitude, `${data.city || ""}${data.city ? ", " : ""}${data.country || ""}`);
       return;
     }
     throw new Error("No coordinates from IP lookup");
