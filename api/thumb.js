@@ -1,15 +1,26 @@
 // /api/thumb.js
 // Best-effort article thumbnail fetcher.
 //
-// Google News RSS does not include images in the feed data at all, so for
-// each article we try to follow its link server-side (no CORS issues here)
-// and read the publisher page's <meta property="og:image"> tag — the same
-// tag Facebook/Twitter/Slack use to generate link previews.
+// Google News RSS does not include images, AND the <link> in each RSS item
+// is a Google redirect page that only resolves to the real publisher URL
+// via client-side JavaScript in a real browser — a plain server-side fetch
+// just gets Google's redirect shell, not the article.
 //
-// This works for most publishers. Some Google News redirect links resolve
-// to a page that needs JavaScript to reach the real article, so those will
-// come back empty — the frontend falls back to a plain placeholder card in
-// that case, it does not error out.
+// To get a real thumbnail we have to:
+//   1) Scrape a signature/timestamp/id triple out of that redirect page
+//   2) POST it to Google News' internal (undocumented) batchexecute
+//      endpoint to get back the real publisher URL
+//   3) Fetch THAT page and read its og:image meta tag
+//
+// This mirrors Google's own internal decoding and is not officially
+// documented or supported — it can break if Google changes the mechanism.
+// Every step fails soft: any failure just returns { image: null } and the
+// frontend falls back to a styled placeholder card, never an error.
+
+const UA_HEADERS = {
+  "User-Agent":
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+};
 
 export default async function handler(req, res) {
   const { url } = req.query;
@@ -19,43 +30,87 @@ export default async function handler(req, res) {
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 6000);
+  const timeout = setTimeout(() => controller.abort(), 9000);
 
   try {
-    const upstream = await fetch(url, {
+    const targetUrl = (await resolveGoogleNewsUrl(url, controller.signal)) || url;
+
+    const upstream = await fetch(targetUrl, {
       redirect: "follow",
       signal: controller.signal,
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
-      },
+      headers: UA_HEADERS,
     });
-    clearTimeout(timeout);
 
     if (!upstream.ok) {
+      clearTimeout(timeout);
       res.setHeader("Cache-Control", "s-maxage=3600");
       res.status(200).json({ image: null });
       return;
     }
 
-    // og:image lives in <head>, so we only need to read the first chunk of
-    // the page — no point downloading the entire article body/scripts.
     const html = await readPartial(upstream, 200_000);
-
     const image =
       matchMeta(html, "og:image:secure_url") ||
       matchMeta(html, "og:image") ||
       matchMeta(html, "twitter:image");
 
-    // Cache aggressively — thumbnails don't change once an article is published.
+    clearTimeout(timeout);
     res.setHeader("Cache-Control", "s-maxage=21600, stale-while-revalidate=86400");
     res.status(200).json({ image: image || null });
   } catch (err) {
     clearTimeout(timeout);
-    // Any failure (timeout, no og:image, blocked, etc.) — fail soft.
     res.setHeader("Cache-Control", "s-maxage=1800");
     res.status(200).json({ image: null });
   }
+}
+
+// Resolves a news.google.com/rss/articles/... link to the real publisher
+// URL using Google News' internal batchexecute endpoint. Returns null on
+// any failure (missing markers, network error, unexpected response shape).
+async function resolveGoogleNewsUrl(url, signal) {
+  if (!url.includes("news.google.com")) return url;
+
+  const pageRes = await fetch(url, { signal, headers: UA_HEADERS });
+  const html = await pageRes.text();
+
+  const signature = firstMatch(html, /data-n-a-sg="([^"]+)"/);
+  const timestamp = firstMatch(html, /data-n-a-ts="([^"]+)"/);
+  const articleId = firstMatch(html, /data-n-a-id="([^"]+)"/);
+  if (!signature || !timestamp || !articleId) return null;
+
+  const innerParams = [
+    "garturlreq",
+    [["X", "X", ["X", "X"], null, null, 1, 1, "US:en", null, 1, null, null, null, null, null, 0, 1],
+      "X", "X", 1, [1, 1, 1], 1, 1, null, 0, 0, null, 0],
+    articleId,
+    timestamp,
+    signature,
+  ];
+  const fReq = JSON.stringify([[["Fbv4je", JSON.stringify(innerParams)]]]);
+
+  const decodeRes = await fetch("https://news.google.com/_/DotsSplashUi/data/batchexecute", {
+    method: "POST",
+    signal,
+    headers: {
+      ...UA_HEADERS,
+      "content-type": "application/x-www-form-urlencoded;charset=UTF-8",
+      "referer": "https://news.google.com/",
+    },
+    body: new URLSearchParams({ "f.req": fReq }).toString(),
+  });
+  const text = await decodeRes.text();
+
+  const line = text.split("\n").find((l) => l.trim().startsWith('[["wrb.fr"'));
+  if (!line) return null;
+
+  const outer = JSON.parse(line);
+  const inner = JSON.parse(outer[0][2]);
+  return inner[1] || null;
+}
+
+function firstMatch(html, re) {
+  const m = html.match(re);
+  return m ? m[1] : null;
 }
 
 async function readPartial(response, maxBytes) {
