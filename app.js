@@ -160,58 +160,80 @@ function placeholderThumb(source) {
   return `<div class="thumb-placeholder w-full h-full grid place-items-center"><span class="font-display text-3xl text-brass/30 select-none">${initial}</span></div>`;
 }
 
-// ---------- thumbnails (best-effort, via /api/thumb) ----------
-const thumbCache = new Map();     // link -> image url | null (null = tried, none found)
-const thumbInFlight = new Map();  // link -> in-progress promise
-let thumbObserver = null;
+// ---------- enrichment (best-effort real image + summary, via /api/thumb) ----------
+const enrichCache = new Map();     // link -> { image, description } | null (tried, nothing found)
+const enrichInFlight = new Map();  // link -> in-progress promise
 
-async function getThumbnail(link) {
+async function getEnrichment(link) {
   if (!link) return null;
-  if (thumbCache.has(link)) return thumbCache.get(link);
-  if (thumbInFlight.has(link)) return thumbInFlight.get(link);
+  if (enrichCache.has(link)) return enrichCache.get(link);
+  if (enrichInFlight.has(link)) return enrichInFlight.get(link);
 
   const promise = fetch(`/api/thumb?url=${encodeURIComponent(link)}`)
-    .then(r => (r.ok ? r.json() : { image: null }))
-    .then(d => { const img = d.image || null; thumbCache.set(link, img); return img; })
-    .catch(() => { thumbCache.set(link, null); return null; })
-    .finally(() => thumbInFlight.delete(link));
+    .then(r => (r.ok ? r.json() : { image: null, description: null }))
+    .then(d => {
+      const result = { image: d.image || null, description: d.description || null };
+      enrichCache.set(link, result);
+      return result;
+    })
+    .catch(() => { enrichCache.set(link, null); return null; })
+    .finally(() => enrichInFlight.delete(link));
 
-  thumbInFlight.set(link, promise);
+  enrichInFlight.set(link, promise);
   return promise;
 }
 
-// Lazily fetch a real thumbnail only once a card actually scrolls into
-// view — avoids firing 30-40 requests at once on every page load.
-function observeThumbSlot(slotEl) {
-  if (!thumbObserver) {
-    thumbObserver = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        thumbObserver.unobserve(entry.target);
-        fillThumbSlot(entry.target);
-      });
-    }, { rootMargin: "300px" });
-  }
-  thumbObserver.observe(slotEl);
+// Runs `worker` over `items` with at most `limit` requests in flight at
+// once — lets us enrich every card on the page (not just visible ones, so
+// crawlers that don't scroll still see real summaries) without firing 30-40
+// requests simultaneously.
+async function runWithConcurrency(items, limit, worker) {
+  let i = 0;
+  const lanes = new Array(Math.min(limit, items.length)).fill(0).map(async () => {
+    while (i < items.length) {
+      const item = items[i++];
+      await worker(item).catch(() => {});
+    }
+  });
+  await Promise.all(lanes);
 }
 
-async function fillThumbSlot(slotEl) {
-  const link = slotEl.dataset.link;
-  const imgClass = slotEl.dataset.imgClass || "w-full h-full object-cover";
-  if (!link) return;
+// Fills in a rendered card's thumbnail and/or description once real data
+// is available. Leaves the placeholder image / fallback line in place if
+// nothing could be found for that particular story.
+async function enrichCard(cardEl) {
+  const link = cardEl.dataset.link;
+  if (!link || !cardEl.isConnected) return;
 
-  const cached = thumbCache.get(link);
-  if (cached === null) return; // already tried, nothing found — keep placeholder
+  const result = await getEnrichment(link);
+  if (!result || !cardEl.isConnected) return;
 
-  const image = cached || (await getThumbnail(link));
-  if (!image || !slotEl.isConnected) return;
+  if (result.image) {
+    const thumbSlot = cardEl.querySelector(".thumb-slot");
+    if (thumbSlot) {
+      const img = new Image();
+      img.alt = "";
+      img.className = thumbSlot.dataset.imgClass || "w-full h-full object-cover";
+      img.onload = () => { thumbSlot.innerHTML = ""; thumbSlot.appendChild(img); };
+      img.onerror = () => {};
+      img.src = result.image;
+    }
+  }
 
-  const img = new Image();
-  img.alt = "";
-  img.className = imgClass;
-  img.onload = () => { slotEl.innerHTML = ""; slotEl.appendChild(img); };
-  img.onerror = () => { /* broken image — keep placeholder */ };
-  img.src = image;
+  if (result.description) {
+    const descSlot = cardEl.querySelector(".desc-slot");
+    if (descSlot && descSlot.dataset.hasLocalDesc !== "true") {
+      descSlot.textContent = result.description;
+    }
+  }
+}
+
+// Kicks off enrichment for every card currently in the grid/featured
+// section. Called right after render — not gated on scroll — so summaries
+// are populated whether or not a visitor (or a crawler) scrolls the page.
+function enrichVisibleCards(container) {
+  const cards = Array.from(container.querySelectorAll("[data-link]"));
+  runWithConcurrency(cards, 5, enrichCard);
 }
 
 function categoryMeta(id) {
@@ -279,21 +301,21 @@ function renderArticles() {
   // Featured (only for non-search, first load)
   if (!state.query) {
     featuredEl.classList.remove("hidden");
+    const hasDesc = Boolean(first._desc);
     featuredEl.innerHTML = `
-      <article data-idx="0" class="article-card group cursor-pointer grid md:grid-cols-2 gap-0 rounded-xl overflow-hidden border border-hair bg-panel hover:border-brass/40 transition-colors">
-        <div class="relative h-56 md:h-full bg-panel2 overflow-hidden thumb-slot" data-link="${escapeAttr(first.link)}" data-img-class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+      <article data-idx="0" data-link="${escapeAttr(first.link)}" class="article-card group cursor-pointer grid md:grid-cols-2 gap-0 rounded-xl overflow-hidden border border-hair bg-panel hover:border-brass/40 transition-colors">
+        <div class="relative h-56 md:h-full bg-panel2 overflow-hidden thumb-slot" data-img-class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
           ${placeholderThumb(first._source)}
           <span class="absolute top-3 left-3 bg-ink/90 text-brass font-mono text-[10px] uppercase tracking-[0.2em] px-2.5 py-1 rounded-full border border-brass/30">Featured</span>
         </div>
         <div class="p-6 flex flex-col justify-center">
           <span class="font-mono text-[11px] uppercase tracking-[0.2em] text-brass mb-3">${first._source} · ${first._timeAgo}</span>
           <h2 class="font-display text-2xl sm:text-3xl font-medium text-paper leading-snug mb-3 group-hover:text-brass transition-colors">${first._headline}</h2>
-          <p class="text-paper/70 text-sm leading-relaxed clamp-3">${first._desc}</p>
+          <p class="desc-slot text-paper/70 text-sm leading-relaxed clamp-3" data-has-local-desc="${hasDesc}">${hasDesc ? first._desc : fallbackDesc(first)}</p>
         </div>
       </article>
     `;
     featuredEl.querySelector(".article-card").addEventListener("click", () => openModal(first));
-    observeThumbSlot(featuredEl.querySelector(".thumb-slot"));
   } else {
     featuredEl.classList.add("hidden");
   }
@@ -301,15 +323,16 @@ function renderArticles() {
   const items = state.query ? state.articles : rest;
   gridEl.innerHTML = items.map((a, i) => {
     const realIdx = state.query ? i : i + 1;
+    const hasDesc = Boolean(a._desc);
     return `
-      <article data-idx="${realIdx}" class="article-card group cursor-pointer rounded-xl overflow-hidden border border-hair bg-panel hover:border-brass/40 transition-colors flex flex-col">
-        <div class="relative h-40 bg-panel2 overflow-hidden thumb-slot" data-link="${escapeAttr(a.link)}" data-img-class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+      <article data-idx="${realIdx}" data-link="${escapeAttr(a.link)}" class="article-card group cursor-pointer rounded-xl overflow-hidden border border-hair bg-panel hover:border-brass/40 transition-colors flex flex-col">
+        <div class="relative h-40 bg-panel2 overflow-hidden thumb-slot" data-img-class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
           ${placeholderThumb(a._source)}
         </div>
         <div class="p-4 flex flex-col flex-1">
           <span class="font-mono text-[10px] uppercase tracking-[0.15em] text-brass mb-2">${a._source} · ${a._timeAgo}</span>
           <h3 class="font-display text-base font-medium text-paper leading-snug mb-2 clamp-2 group-hover:text-brass transition-colors">${a._headline}</h3>
-          <p class="text-paper/60 text-xs leading-relaxed clamp-2 mt-auto">${a._desc}</p>
+          <p class="desc-slot text-paper/60 text-xs leading-relaxed clamp-2 mt-auto" data-has-local-desc="${hasDesc}">${hasDesc ? a._desc : fallbackDesc(a)}</p>
         </div>
       </article>
     `;
@@ -319,7 +342,16 @@ function renderArticles() {
     const idx = Number(card.dataset.idx);
     card.addEventListener("click", () => openModal(state.articles[idx]));
   });
-  gridEl.querySelectorAll(".thumb-slot").forEach(observeThumbSlot);
+
+  enrichVisibleCards(featuredEl);
+  enrichVisibleCards(gridEl);
+}
+
+// Used only until a real summary loads (or if none is ever found) — varies
+// by source/category instead of a static "No summary available" line
+// repeated on every card, which reads as thin/templated content.
+function fallbackDesc(article) {
+  return `Reported by ${article._source}. Open the full story for details.`;
 }
 
 // ---------- ticker ----------
@@ -336,15 +368,21 @@ async function openModal(article) {
   modalImageWrap.innerHTML = "";
   modalTitle.textContent = article._headline;
   modalMeta.textContent = `${article._source} · ${timeAgo(article.pubDate)}`;
-  modalDesc.textContent = article._desc || "No summary available for this story — open the full article to read more.";
+  modalDesc.textContent = article._desc || fallbackDesc(article);
   modalLink.href = article.link || "#";
   modalOverlay.classList.remove("hidden");
   document.body.style.overflow = "hidden";
 
   const staticImg = extractImage(article);
-  const image = staticImg || (await getThumbnail(article.link));
-  if (image && modalOverlay.classList.contains("hidden") === false) {
+  const result = await getEnrichment(article.link);
+  if (modalOverlay.classList.contains("hidden")) return; // closed before it resolved
+
+  const image = staticImg || result?.image;
+  if (image) {
     modalImageWrap.innerHTML = `<img src="${image}" alt="" class="w-full h-56 object-cover" onerror="this.parentElement.innerHTML=''"/>`;
+  }
+  if (!article._desc && result?.description) {
+    modalDesc.textContent = result.description;
   }
 }
 function closeModal() {
