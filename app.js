@@ -53,6 +53,7 @@ const refreshBtn    = document.getElementById("refreshBtn");
 const refreshIcon   = document.getElementById("refreshIcon");
 const clockEl       = document.getElementById("clock");
 const savedBtn      = document.getElementById("savedBtn");
+const notifyBtn     = document.getElementById("notifyBtn");
 
 const modalOverlay  = document.getElementById("modalOverlay");
 const modalClose    = document.getElementById("modalClose");
@@ -452,6 +453,95 @@ function cardControlsHtml(article) {
   `;
 }
 
+// ---------- live alerts (Notification API) ----------
+// Works whenever this site is open in a browser tab — including backgrounded
+// tabs — on a device connected to the internet. It notifies on new breaking
+// headlines, meaningful weather changes, and gold price moves.
+//
+// It does NOT fire once the browser/tab is fully closed. True "closed app"
+// push requires a Service Worker + the Push API + a backend that stores
+// subscriptions and sends pushes (e.g. via VAPID keys and a scheduled job) —
+// that's a separate backend feature, not something pure client-side JS can do.
+const NOTIFY_PREF_KEY = "dateline_notify_pref_v1";
+let notifyEnabled = localStorage.getItem(NOTIFY_PREF_KEY) === "1";
+
+function notificationsSupported() {
+  return "Notification" in window;
+}
+
+function updateNotifyBtn() {
+  if (!notifyBtn) return;
+  if (!notificationsSupported()) { notifyBtn.classList.add("hidden"); return; }
+  const active = notifyEnabled && Notification.permission === "granted";
+  notifyBtn.innerHTML = active ? "🔔 Notifying" : "🔕 Notify me";
+  notifyBtn.classList.toggle("text-brass", active);
+  notifyBtn.classList.toggle("border-brass/50", active);
+  notifyBtn.classList.toggle("text-mute", !active);
+}
+
+async function enableNotifications() {
+  if (!notificationsSupported()) {
+    alert("This browser doesn't support notifications.");
+    return;
+  }
+  if (Notification.permission === "denied") {
+    alert("Notifications are blocked for this site. Enable them from your browser's site settings (the padlock icon next to the address bar) to receive live alerts.");
+    return;
+  }
+  const perm = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
+  notifyEnabled = perm === "granted";
+  localStorage.setItem(NOTIFY_PREF_KEY, notifyEnabled ? "1" : "0");
+  if (notifyEnabled) {
+    pushNotification("DATELINE — Live Wire", "You're set. Keep this site open (even in a background tab) and you'll get alerts here for breaking news, weather changes, and market moves.");
+  }
+  updateNotifyBtn();
+}
+
+function pushNotification(title, body) {
+  if (!notificationsSupported() || !notifyEnabled || Notification.permission !== "granted") return;
+  try {
+    const n = new Notification(title, { body });
+    n.onclick = () => { window.focus(); n.close(); };
+  } catch {
+    // Some browsers (mobile Safari, some Android WebViews) don't support the
+    // Notification constructor directly — silently skip rather than error out.
+  }
+}
+
+if (notifyBtn) {
+  notifyBtn.classList.remove("hidden");
+  notifyBtn.addEventListener("click", () => {
+    if (notifyEnabled && Notification.permission === "granted") {
+      notifyEnabled = false;
+      localStorage.setItem(NOTIFY_PREF_KEY, "0");
+      updateNotifyBtn();
+    } else {
+      enableNotifications();
+    }
+  });
+}
+
+// Background watcher for new breaking headlines — runs independently of
+// whatever category/search the user currently has open, so it can alert
+// even while they're reading a different section.
+let lastSeenTopLink = null;
+async function backgroundCheckBreakingNews() {
+  if (!notifyEnabled || Notification.permission !== "granted") return;
+  try {
+    const xmlDoc = await fetchRssXml({ category: "top" });
+    const items = parseRssItems(xmlDoc);
+    if (items.length === 0) return;
+    const top = items[0];
+    if (lastSeenTopLink && top.link !== lastSeenTopLink && top._minutesAgo <= 30) {
+      pushNotification("🔴 Breaking on DATELINE", top._headline);
+    }
+    lastSeenTopLink = top.link;
+  } catch {
+    // Silent — this is a background check, not user-initiated, so we don't
+    // want to surface network errors as an alert.
+  }
+}
+
 // ---------- rendering: categories ----------
 function renderCategories() {
   navRail.innerHTML = CATEGORIES.map(cat => `
@@ -592,20 +682,38 @@ function renderTicker(articles) {
 }
 
 // ---------- financial ticker ----------
+// LIVE:      USD/PKR (open.er-api.com) and Gold/oz (gold-api.com) — both
+//            free, keyless, CORS-enabled endpoints, no simulation involved.
+// SIMULATED: the market index. There is no free, keyless, real-time index
+//            feed (KSE-100 / Nasdaq / etc. all require a paid or signup-gated
+//            API key). Swap fetchMarketIndex() for a real provider (e.g. a
+//            free-tier FCS API / Twelve Data key called through your own
+//            /api endpoint, so the key stays server-side) to make it live.
 const financeData = {
   usdPkr: null,
-  gold: 2415,     // simulated baseline (USD / troy oz)
-  index: 78250,   // simulated baseline (e.g. KSE-100 style index)
+  gold: null,
+  index: 78250, // simulated baseline
 };
+let financeInitialized = false;
 
-// USD/PKR from a free, keyless FX endpoint. Falls back gracefully if the
-// request fails so the rest of the ticker still renders.
 async function fetchUsdPkr() {
   try {
     const res = await fetch("https://open.er-api.com/v6/latest/USD");
     if (!res.ok) return null;
     const data = await res.json();
     return data?.rates?.PKR || null;
+  } catch {
+    return null;
+  }
+}
+
+// Live XAU/USD spot price — free, no API key, CORS-enabled.
+async function fetchGoldPrice() {
+  try {
+    const res = await fetch("https://api.gold-api.com/price/XAU");
+    if (!res.ok) return null;
+    const data = await res.json();
+    return typeof data?.price === "number" ? data.price : null;
   } catch {
     return null;
   }
@@ -618,25 +726,37 @@ function changeChip(delta, opts = {}) {
 }
 
 async function renderFinancialTicker() {
-  const rate = await fetchUsdPkr();
-  if (rate) financeData.usdPkr = rate;
+  const [rate, gold] = await Promise.all([fetchUsdPkr(), fetchGoldPrice()]);
 
-  // Small simulated tick each refresh for the two feeds we don't have a
-  // free live source for — replace with a real market-data call for production.
-  const goldDelta = (Math.random() - 0.48) * 4;
+  const prevGold = financeData.gold;
+  if (rate) financeData.usdPkr = rate;
+  if (gold) financeData.gold = gold;
+  const goldDelta = financeInitialized && prevGold != null && financeData.gold != null ? financeData.gold - prevGold : 0;
+
+  // Simulated tick for the index only (see note above fetchGoldPrice).
   const indexDelta = (Math.random() - 0.48) * 120;
-  financeData.gold = Math.max(0, financeData.gold + goldDelta);
   financeData.index = Math.max(0, financeData.index + indexDelta);
 
   const items = [
     financeData.usdPkr
       ? `<span class="px-6 font-mono text-xs whitespace-nowrap text-paper">USD/PKR <span class="text-brass font-semibold">${financeData.usdPkr.toFixed(2)}</span></span>`
       : `<span class="px-6 font-mono text-xs whitespace-nowrap text-mute">USD/PKR unavailable</span>`,
-    `<span class="px-6 font-mono text-xs whitespace-nowrap text-paper">GOLD (oz) <span class="text-brass font-semibold">$${financeData.gold.toFixed(2)}</span> ${changeChip(goldDelta)}</span>`,
-    `<span class="px-6 font-mono text-xs whitespace-nowrap text-paper">MARKET INDEX <span class="text-brass font-semibold">${financeData.index.toFixed(0)}</span> ${changeChip(indexDelta, { decimals: 0 })}</span>`,
+    financeData.gold != null
+      ? `<span class="px-6 font-mono text-xs whitespace-nowrap text-paper">GOLD (oz) <span class="text-brass font-semibold">$${financeData.gold.toFixed(2)}</span> ${changeChip(goldDelta)}</span>`
+      : `<span class="px-6 font-mono text-xs whitespace-nowrap text-mute">GOLD unavailable</span>`,
+    `<span class="px-6 font-mono text-xs whitespace-nowrap text-paper">MARKET INDEX* <span class="text-brass font-semibold">${financeData.index.toFixed(0)}</span> ${changeChip(indexDelta, { decimals: 0 })}</span>`,
   ];
   const strip = items.join("<span class='text-mute/30'>|</span>");
   finTickerTrack.innerHTML = strip + strip; // duplicate for seamless loop
+
+  // Notify on a meaningful gold move once we have a real previous value to compare against.
+  if (financeInitialized && prevGold != null && financeData.gold != null) {
+    const pctMove = Math.abs(financeData.gold - prevGold) / prevGold;
+    if (pctMove >= 0.003) {
+      pushNotification("💰 Gold price move", `Gold is now $${financeData.gold.toFixed(2)}/oz (${goldDelta >= 0 ? "+" : ""}${goldDelta.toFixed(2)})`);
+    }
+  }
+  financeInitialized = true;
 }
 
 // ---------- modal ----------
@@ -821,9 +941,21 @@ function weatherErrorState() {
   weatherBody.innerHTML = `<span class="font-mono text-xs text-mute">Couldn't load weather. Try searching a city above.</span>`;
 }
 
+let lastWeatherSnapshot = null; // { temp, code }
+
 function renderWeather(label, current) {
   const temp = Math.round(current.temperature_2m);
   const feels = Math.round(current.apparent_temperature);
+
+  if (lastWeatherSnapshot) {
+    const tempJump = Math.abs(temp - lastWeatherSnapshot.temp) >= 3;
+    const conditionChanged = current.weathercode !== lastWeatherSnapshot.code;
+    if (tempJump || conditionChanged) {
+      pushNotification("🌤️ Weather update", `${label}: now ${temp}°C, ${weatherLabel(current.weathercode)}`);
+    }
+  }
+  lastWeatherSnapshot = { temp, code: current.weathercode };
+
   weatherBody.innerHTML = `
     <div class="flex items-center gap-4">
       <span class="text-4xl leading-none">${weatherIcon(current.weathercode)}</span>
@@ -926,7 +1058,18 @@ if (footerYearEl) footerYearEl.textContent = new Date().getFullYear();
 // ---------- init ----------
 renderCategories();
 updateSavedBtnLabel();
+updateNotifyBtn();
 loadFeed();
 detectLocationAndLoadWeather();
 renderFinancialTicker();
+
+// Background refresh cadence:
+// - financial ticker every 60s (also drives the gold-move alert)
+// - weather every 10 min (also drives the weather-change alert)
+// - breaking-news watcher every 4 min (independent of the visible category)
 setInterval(renderFinancialTicker, 60 * 1000);
+setInterval(detectLocationAndLoadWeather, 10 * 60 * 1000);
+setInterval(backgroundCheckBreakingNews, 4 * 60 * 1000);
+// Prime lastSeenTopLink shortly after load so the very first background
+// check doesn't fire a notification for a headline the user already saw.
+setTimeout(backgroundCheckBreakingNews, 15 * 1000);
