@@ -576,6 +576,10 @@ if (siteHeader) {
   toggleHeaderShadow();
 }
 
+// ---------- footer year ----------
+const footerYearEl = document.getElementById("footerYear");
+if (footerYearEl) footerYearEl.textContent = new Date().getFullYear();
+
 // ---------- init ----------
 renderCategories();
 loadFeed();
