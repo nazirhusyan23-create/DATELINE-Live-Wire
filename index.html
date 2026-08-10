@@ -46,7 +46,7 @@
   html { scroll-behavior: smooth; }
   body { background-color: #0B0C0E; }
 
-  /* Ticker tape marquee */
+  /* Ticker tape marquee (shared by news + financial tickers) */
   .ticker-track {
     display: flex;
     width: max-content;
@@ -56,6 +56,10 @@
   @keyframes ticker-scroll {
     from { transform: translateX(0); }
     to   { transform: translateX(-50%); }
+  }
+
+  .fin-ticker-track {
+    animation-duration: 30s;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -104,6 +108,16 @@
     background-color: #1A1D22;
     background-image: repeating-linear-gradient(135deg, rgba(201,162,75,0.06) 0px, rgba(201,162,75,0.06) 1px, transparent 1px, transparent 13px);
   }
+
+  /* Breaking-news badge pulse (respects reduced-motion via the rule above) */
+  @keyframes breaking-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+  }
+  .breaking-badge { animation: breaking-pulse 1.6s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) {
+    .breaking-badge { animation: none; }
+  }
 </style>
 </head>
 
@@ -122,6 +136,7 @@
 
         <div class="flex items-center gap-3">
           <span id="clock" class="hidden md:block font-mono text-xs text-mute"></span>
+          <button id="savedBtn" type="button" title="Saved for later" class="hidden sm:inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider border border-hair rounded-full px-3 py-1.5 text-mute hover:text-brass hover:border-brass/50 transition-colors">🔖 Saved</button>
           <button id="refreshBtn" title="Refresh feed" class="grid place-items-center w-9 h-9 rounded-full border border-hair text-mute hover:text-brass hover:border-brass/50 transition-colors">
             <svg id="refreshIcon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="w-4 h-4 transition-transform duration-500">
               <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12a7.5 7.5 0 0113-5.03M19.5 12a7.5 7.5 0 01-13 5.03M4.5 5.5v3h3M19.5 18.5v-3h-3"/>
@@ -152,7 +167,21 @@
     </div>
   </header>
 
-  <!-- ============ TICKER ============ -->
+  <!-- ============ FINANCIAL TICKER ============ -->
+  <div class="bg-panel2 border-b border-hair overflow-hidden select-none">
+    <div class="max-w-7xl mx-auto flex items-center">
+      <span class="shrink-0 font-mono text-[11px] font-bold tracking-[0.2em] uppercase bg-ink text-mute px-3 py-1.5 z-10 border-r border-hair">
+        Markets
+      </span>
+      <div class="overflow-hidden flex-1">
+        <div id="finTickerTrack" class="ticker-track fin-ticker-track py-1.5">
+          <span class="px-6 font-mono text-xs text-mute whitespace-nowrap">Loading markets…</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ NEWS TICKER ============ -->
   <div class="bg-brass/95 text-ink overflow-hidden select-none">
     <div class="max-w-7xl mx-auto flex items-center">
       <span class="shrink-0 font-mono text-[11px] font-bold tracking-[0.2em] uppercase bg-ink text-brass px-3 py-1.5 z-10">
@@ -240,7 +269,11 @@
       <div class="p-5 sm:p-6">
         <h2 id="modalTitle" class="font-display text-xl sm:text-2xl font-medium text-paper leading-snug mb-2"></h2>
         <p id="modalMeta" class="font-mono text-[11px] text-mute mb-4"></p>
-        <p id="modalDesc" class="text-paper/85 text-sm leading-relaxed mb-6"></p>
+        <p id="modalDesc" class="text-paper/85 text-sm leading-relaxed mb-5"></p>
+        <div class="flex items-center flex-wrap gap-2 mb-6">
+          <button id="modalListenBtn" type="button" class="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider border border-hair rounded-full px-3 py-1.5 text-mute hover:text-brass hover:border-brass/50 transition-colors">▶️ Listen</button>
+          <button id="modalBookmarkBtn" type="button" class="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider border border-hair rounded-full px-3 py-1.5 text-mute hover:text-brass hover:border-brass/50 transition-colors">🔖 Save</button>
+        </div>
         <a id="modalLink" href="#" target="_blank" rel="noopener noreferrer"
             class="inline-flex items-center gap-2 bg-brass text-ink font-semibold text-sm px-5 py-2.5 rounded-full hover:bg-brass/90 transition-colors">
           Read full story
