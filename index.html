@@ -278,17 +278,33 @@
 
   <!-- ============ FOOTER ============ -->
   <footer class="border-t border-hair mt-10">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-      <p class="font-display text-sm text-mute">DATELINE — an independent live-wire reader.</p>
-      <div class="flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
-        <div class="flex items-center gap-4">
-          <a href="/about.html" class="font-mono text-[11px] text-mute hover:text-brass transition-colors">About</a>
-          <a href="/privacy.html" class="font-mono text-[11px] text-mute hover:text-brass transition-colors">Privacy</a>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-10">
+
+      <!-- Brand row -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div class="flex items-baseline gap-2">
+          <span class="font-display text-xl font-semibold tracking-tight text-paper">DATELINE</span>
+          <span class="font-mono text-[10px] text-brass tracking-[0.2em] uppercase">Live Wire</span>
         </div>
-        <p class="font-mono text-[11px] text-mute/70 text-center sm:text-right">
-          Headlines sourced live from public Google News RSS feeds · Not affiliated with any publisher.
-        </p>
+        <p class="font-body text-sm text-mute">An independent live-wire reader — built for scanning the news fast.</p>
       </div>
+
+      <div class="border-t border-hair"></div>
+
+      <!-- Links row -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6">
+        <nav class="flex items-center gap-x-6 gap-y-2 flex-wrap justify-center">
+          <a href="/" class="font-mono text-xs uppercase tracking-wider text-mute hover:text-brass transition-colors">Home</a>
+          <a href="/about.html" class="font-mono text-xs uppercase tracking-wider text-mute hover:text-brass transition-colors">About</a>
+          <a href="/privacy.html" class="font-mono text-xs uppercase tracking-wider text-mute hover:text-brass transition-colors">Privacy</a>
+        </nav>
+        <p class="font-mono text-[11px] text-mute/60">&copy; <span id="footerYear"></span> DATELINE</p>
+      </div>
+
+      <!-- Disclaimer, always last -->
+      <p class="font-mono text-[10px] text-mute/50 text-center mt-6 pt-6 border-t border-hair leading-relaxed">
+        Headlines sourced live from public Google News RSS feeds · Not affiliated with any publisher · All trademarks belong to their respective owners.
+      </p>
     </div>
   </footer>
 
