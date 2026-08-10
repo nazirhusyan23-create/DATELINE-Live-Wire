@@ -56,7 +56,7 @@ export default async function handler(req, res) {
 
     if (!upstream.ok) {
       clearTimeout(timeout);
-      res.setHeader("Cache-Control", "s-maxage=3600");
+      res.setHeader("Cache-Control", debug ? "no-store" : "s-maxage=3600");
       res.status(200).json({ image: null, description: null, ...(debug ? { trace } : {}) });
       return;
     }
@@ -82,7 +82,7 @@ export default async function handler(req, res) {
   } catch (err) {
     clearTimeout(timeout);
     mark({ step: "error", message: String(err) });
-    res.setHeader("Cache-Control", "s-maxage=1800");
+    res.setHeader("Cache-Control", debug ? "no-store" : "s-maxage=1800");
     res.status(200).json({ image: null, description: null, ...(debug ? { trace } : {}) });
   }
 }
