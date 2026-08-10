@@ -464,9 +464,27 @@ function cardControlsHtml(article) {
 // that's a separate backend feature, not something pure client-side JS can do.
 const NOTIFY_PREF_KEY = "dateline_notify_pref_v1";
 let notifyEnabled = localStorage.getItem(NOTIFY_PREF_KEY) === "1";
+let notifySwRegistration = null;
 
 function notificationsSupported() {
   return "Notification" in window;
+}
+
+// Mobile Chrome (Android) throws on `new Notification()` — it only allows
+// notifications fired through a registered Service Worker's
+// showNotification(). Desktop browsers support both, so registering this
+// unconditionally makes notifications work the same way everywhere.
+// Requires a secure context (https:// or localhost) — file:// won't work.
+async function r9yMnTm4NSzvG9rrwjM2ec8xZgh1cafXH8() {
+  if (!("serviceWorker" in navigator)) return null;
+  try {
+    const reg = await navigator.serviceWorker.register("/sw.js");
+    notifySwRegistration = reg;
+    return reg;
+  } catch (err) {
+    console.error("Service worker registration failed (notifications need https:// or localhost):", err);
+    return null;
+  }
 }
 
 function updateNotifyBtn() {
@@ -492,19 +510,27 @@ async function enableNotifications() {
   notifyEnabled = perm === "granted";
   localStorage.setItem(NOTIFY_PREF_KEY, notifyEnabled ? "1" : "0");
   if (notifyEnabled) {
+    if (!notifySwRegistration) await r9yMnTm4NSzvG9rrwjM2ec8xZgh1cafXH8();
     pushNotification("DATELINE — Live Wire", "You're set. Keep this site open (even in a background tab) and you'll get alerts here for breaking news, weather changes, and market moves.");
   }
   updateNotifyBtn();
 }
 
-function pushNotification(title, body) {
+async function pushNotification(title, body) {
   if (!notificationsSupported() || !notifyEnabled || Notification.permission !== "granted") return;
   try {
-    const n = new Notification(title, { body });
-    n.onclick = () => { window.focus(); n.close(); };
-  } catch {
-    // Some browsers (mobile Safari, some Android WebViews) don't support the
-    // Notification constructor directly — silently skip rather than error out.
+    if (notifySwRegistration) {
+      // Works on both desktop and mobile Chrome — the only reliable path on Android.
+      await notifySwRegistration.showNotification(title, { body });
+      return;
+    }
+    if (typeof Notification === "function") {
+      // Desktop fallback if the service worker isn't ready yet.
+      const n = new Notification(title, { body });
+      n.onclick = () => { window.focus(); n.close(); };
+    }
+  } catch (err) {
+    console.error("Notification failed to display:", err);
   }
 }
 
@@ -1059,6 +1085,7 @@ if (footerYearEl) footerYearEl.textContent = new Date().getFullYear();
 renderCategories();
 updateSavedBtnLabel();
 updateNotifyBtn();
+r9yMnTm4NSzvG9rrwjM2ec8xZgh1cafXH8();
 loadFeed();
 detectLocationAndLoadWeather();
 renderFinancialTicker();
