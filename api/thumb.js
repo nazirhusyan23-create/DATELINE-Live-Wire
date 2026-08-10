@@ -37,12 +37,14 @@ export default async function handler(req, res) {
     return;
   }
 
+  const t0 = Date.now();
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 25000);
   const trace = [];
+  const mark = (entry) => trace.push({ ...entry, elapsedMs: Date.now() - t0 });
 
   try {
-    const resolved = await resolveGoogleNewsUrl(url, controller.signal, trace);
+    const resolved = await resolveGoogleNewsUrl(url, controller.signal, trace, t0);
     const targetUrl = resolved || url;
 
     const upstream = await fetch(targetUrl, {
@@ -50,7 +52,7 @@ export default async function handler(req, res) {
       signal: controller.signal,
       headers: UA_HEADERS,
     });
-    trace.push({ step: "fetch-target", url: targetUrl, status: upstream.status });
+    mark({ step: "fetch-target", url: targetUrl, status: upstream.status });
 
     if (!upstream.ok) {
       clearTimeout(timeout);
@@ -60,6 +62,7 @@ export default async function handler(req, res) {
     }
 
     const html = await readPartial(upstream, 250_000);
+    mark({ step: "read-target-body", length: html.length });
 
     const image =
       matchMeta(html, "og:image:secure_url") ||
@@ -71,14 +74,14 @@ export default async function handler(req, res) {
       matchMeta(html, "twitter:description") ||
       matchMeta(html, "description")
     );
-    trace.push({ step: "extract", foundImage: Boolean(image), foundDescription: Boolean(description) });
+    mark({ step: "extract", foundImage: Boolean(image), foundDescription: Boolean(description) });
 
     clearTimeout(timeout);
     res.setHeader("Cache-Control", debug ? "no-store" : "s-maxage=21600, stale-while-revalidate=86400");
     res.status(200).json({ image: image || null, description: description || null, ...(debug ? { trace } : {}) });
   } catch (err) {
     clearTimeout(timeout);
-    trace.push({ step: "error", message: String(err) });
+    mark({ step: "error", message: String(err) });
     res.setHeader("Cache-Control", "s-maxage=1800");
     res.status(200).json({ image: null, description: null, ...(debug ? { trace } : {}) });
   }
@@ -87,9 +90,11 @@ export default async function handler(req, res) {
 // Resolves a news.google.com/rss/articles/... link to the real publisher
 // URL. Tries a few strategies, cheapest/most-likely-to-work first, and
 // falls through on any failure — never throws.
-async function resolveGoogleNewsUrl(url, signal, trace = []) {
+async function resolveGoogleNewsUrl(url, signal, trace, t0) {
+  const mark = (entry) => trace.push({ ...entry, elapsedMs: Date.now() - t0 });
+
   if (!url.includes("news.google.com")) {
-    trace.push({ step: "resolve", note: "not a google news link, using as-is" });
+    mark({ step: "resolve", note: "not a google news link, using as-is" });
     return url;
   }
 
@@ -97,9 +102,9 @@ async function resolveGoogleNewsUrl(url, signal, trace = []) {
   try {
     const pageRes = await fetch(url, { signal, headers: UA_HEADERS });
     html = await pageRes.text();
-    trace.push({ step: "fetch-redirect-page", status: pageRes.status, length: html.length });
+    mark({ step: "fetch-redirect-page", status: pageRes.status, length: html.length });
   } catch (err) {
-    trace.push({ step: "fetch-redirect-page", error: String(err) });
+    mark({ step: "fetch-redirect-page", error: String(err) });
     return null;
   }
 
@@ -109,7 +114,7 @@ async function resolveGoogleNewsUrl(url, signal, trace = []) {
     firstMatch(html, /<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i) ||
     firstMatch(html, /<meta[^>]+http-equiv=["']refresh["'][^>]+content=["'][^"']*url=([^"'>]+)["']/i);
   if (canonical && !canonical.includes("news.google.com")) {
-    trace.push({ step: "resolve-canonical", found: canonical });
+    mark({ step: "resolve-canonical", found: canonical });
     return canonical;
   }
 
@@ -117,7 +122,7 @@ async function resolveGoogleNewsUrl(url, signal, trace = []) {
   const signature = firstMatch(html, /data-n-a-sg="([^"]+)"/);
   const timestamp = firstMatch(html, /data-n-a-ts="([^"]+)"/);
   const articleId = firstMatch(html, /data-n-a-id="([^"]+)"/);
-  trace.push({ step: "resolve-signature-markers", hasSignature: Boolean(signature), hasTimestamp: Boolean(timestamp), hasArticleId: Boolean(articleId) });
+  mark({ step: "resolve-signature-markers", hasSignature: Boolean(signature), hasTimestamp: Boolean(timestamp), hasArticleId: Boolean(articleId) });
   if (!signature || !timestamp || !articleId) return null;
 
   const innerParams = [
@@ -143,25 +148,25 @@ async function resolveGoogleNewsUrl(url, signal, trace = []) {
       body: new URLSearchParams({ "f.req": fReq }).toString(),
     });
     text = await decodeRes.text();
-    trace.push({ step: "batchexecute", status: decodeRes.status, length: text.length });
+    mark({ step: "batchexecute", status: decodeRes.status, length: text.length });
   } catch (err) {
-    trace.push({ step: "batchexecute", error: String(err) });
+    mark({ step: "batchexecute", error: String(err) });
     return null;
   }
 
   const line = text.split("\n").find((l) => l.trim().startsWith('[["wrb.fr"'));
   if (!line) {
-    trace.push({ step: "batchexecute-parse", note: "no wrb.fr line found", sample: text.slice(0, 200) });
+    mark({ step: "batchexecute-parse", note: "no wrb.fr line found", sample: text.slice(0, 200) });
     return null;
   }
 
   try {
     const outer = JSON.parse(line);
     const inner = JSON.parse(outer[0][2]);
-    trace.push({ step: "batchexecute-parse", found: Boolean(inner[1]) });
+    mark({ step: "batchexecute-parse", found: Boolean(inner[1]) });
     return inner[1] || null;
   } catch (err) {
-    trace.push({ step: "batchexecute-parse", error: String(err) });
+    mark({ step: "batchexecute-parse", error: String(err) });
     return null;
   }
 }
