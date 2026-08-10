@@ -748,7 +748,30 @@ async function fetchGoldPrice() {
 function changeChip(delta, opts = {}) {
   const up = delta >= 0;
   const decimals = opts.decimals ?? 2;
-  return `<span class="${up ? "text-green-400" : "text-wire"} font-mono">${up ? "▲" : "▼"} ${Math.abs(delta).toFixed(decimals)}</span>`;
+  return `
+    <span class="inline-flex items-center gap-0.5 ${up ? "text-green-400" : "text-wire"} font-mono font-semibold">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-2.5 h-2.5 ${up ? "" : "rotate-180"}">
+        <path d="M12 4l7 8h-5v8h-4v-8H5z"/>
+      </svg>
+      ${Math.abs(delta).toFixed(decimals)}
+    </span>
+  `;
+}
+
+// Each ticker item renders as a self-contained pill: icon + label + value +
+// change chip, on its own rounded/bordered card — rather than plain text
+// separated by dividers, so it reads as a proper market widget at a glance.
+function tickerPill({ icon, label, value, chip, muted }) {
+  return `
+    <span class="inline-flex items-center gap-2.5 mx-1.5 px-3.5 py-1 rounded-full border border-hair bg-panel/70 whitespace-nowrap">
+      <span class="text-sm leading-none">${icon}</span>
+      <span class="font-mono text-[10px] uppercase tracking-[0.14em] text-mute">${label}</span>
+      ${muted
+        ? `<span class="font-mono text-xs text-mute/70">${value}</span>`
+        : `<span class="font-mono text-xs font-semibold text-brass">${value}</span>`}
+      ${chip ? `<span class="font-mono text-[11px]">${chip}</span>` : ""}
+    </span>
+  `;
 }
 
 async function renderFinancialTicker() {
@@ -765,14 +788,14 @@ async function renderFinancialTicker() {
 
   const items = [
     financeData.usdPkr
-      ? `<span class="px-6 font-mono text-xs whitespace-nowrap text-paper">USD/PKR <span class="text-brass font-semibold">${financeData.usdPkr.toFixed(2)}</span></span>`
-      : `<span class="px-6 font-mono text-xs whitespace-nowrap text-mute">USD/PKR unavailable</span>`,
+      ? tickerPill({ icon: "💵", label: "USD/PKR", value: financeData.usdPkr.toFixed(2) })
+      : tickerPill({ icon: "💵", label: "USD/PKR", value: "unavailable", muted: true }),
     financeData.gold != null
-      ? `<span class="px-6 font-mono text-xs whitespace-nowrap text-paper">GOLD (oz) <span class="text-brass font-semibold">$${financeData.gold.toFixed(2)}</span> ${changeChip(goldDelta)}</span>`
-      : `<span class="px-6 font-mono text-xs whitespace-nowrap text-mute">GOLD unavailable</span>`,
-    `<span class="px-6 font-mono text-xs whitespace-nowrap text-paper">MARKET INDEX* <span class="text-brass font-semibold">${financeData.index.toFixed(0)}</span> ${changeChip(indexDelta, { decimals: 0 })}</span>`,
+      ? tickerPill({ icon: "🥇", label: "Gold (oz)", value: `$${financeData.gold.toFixed(2)}`, chip: changeChip(goldDelta) })
+      : tickerPill({ icon: "🥇", label: "Gold (oz)", value: "unavailable", muted: true }),
+    tickerPill({ icon: "📊", label: "Market Index*", value: financeData.index.toFixed(0), chip: changeChip(indexDelta, { decimals: 0 }) }),
   ];
-  const strip = items.join("<span class='text-mute/30'>|</span>");
+  const strip = items.join("");
   finTickerTrack.innerHTML = strip + strip; // duplicate for seamless loop
 
   // Notify on a meaningful gold move once we have a real previous value to compare against.
