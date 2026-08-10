@@ -169,13 +169,14 @@
   </header>
 
   <!-- ============ FINANCIAL TICKER ============ -->
-  <div class="bg-panel2 border-b border-hair overflow-hidden select-none">
+  <div class="bg-gradient-to-r from-panel2 to-ink border-b border-hair overflow-hidden select-none">
     <div class="max-w-7xl mx-auto flex items-center">
-      <span class="shrink-0 font-mono text-[11px] font-bold tracking-[0.2em] uppercase bg-ink text-mute px-3 py-1.5 z-10 border-r border-hair">
+      <span class="shrink-0 flex items-center gap-1.5 font-mono text-[11px] font-bold tracking-[0.2em] uppercase bg-ink text-brass px-3 py-1.5 z-10 border-r border-hair">
+        <span class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
         Markets
       </span>
-      <div class="overflow-hidden flex-1">
-        <div id="finTickerTrack" class="ticker-track fin-ticker-track py-1.5">
+      <div class="overflow-hidden flex-1 py-1">
+        <div id="finTickerTrack" class="ticker-track fin-ticker-track">
           <span class="px-6 font-mono text-xs text-mute whitespace-nowrap">Loading markets…</span>
         </div>
       </div>
