@@ -14,20 +14,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
-<!--
-  Google AdSense
-  ================
-  1. Apply at https://www.google.com/adsense — you'll need real content
-     (see README) beyond just RSS headlines for approval.
-  2. Once you have a publisher ID (looks like "ca-pub-1234567890123456"),
-     replace ADSENSE_CLIENT_ID in the script src below AND in every
-     data-ad-client attribute further down this file.
-  3. Uncomment the script tag. Leaving it commented (or with the
-     placeholder ID) keeps the ad slots inert — no console errors, no ads.
--->
-<!--
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-ADSENSE_CLIENT_ID" crossorigin="anonymous"></script>
--->
+<!-- Google AdSense Active Script -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2006445566626425" crossorigin="anonymous"></script>
 
 <script>
   tailwind.config = {
@@ -83,13 +71,10 @@
 
   ::selection { background: #C9A24B; color: #0B0C0E; }
 
-  /* Header gets a visible shadow once the page is scrolled, so it reads
-     as a distinct layer above the content instead of blending into it. */
   #siteHeader.is-scrolled {
     box-shadow: 0 8px 24px -12px rgba(0,0,0,0.6);
   }
 
-  /* Custom scrollbar for category rail on mobile */
   .cat-rail::-webkit-scrollbar { height: 0px; }
 
   .skeleton {
@@ -115,8 +100,6 @@
     overflow: hidden;
   }
 
-  /* Thumbnail placeholder — shown while a real image loads, or permanently
-     when no image could be found for that story. Styled to look intentional. */
   .thumb-placeholder {
     background-color: #1A1D22;
     background-image: repeating-linear-gradient(135deg, rgba(201,162,75,0.06) 0px, rgba(201,162,75,0.06) 1px, transparent 1px, transparent 13px);
@@ -186,10 +169,9 @@
   <!-- ============ MAIN ============ -->
   <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-8">
 
-    <!-- Ad slot: top banner. Replace ca-pub-ADSENSE_CLIENT_ID and the
-         data-ad-slot value with your real AdSense IDs once approved. -->
+    <!-- Ad slot: top banner -->
     <div class="mb-8 w-full">
-      <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-ADSENSE_CLIENT_ID" data-ad-slot="0000000001" data-ad-format="auto" data-full-width-responsive="true"></ins>
+      <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-2006445566626425" data-ad-slot="0000000001" data-ad-format="auto" data-full-width-responsive="true"></ins>
     </div>
     <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
 
@@ -227,9 +209,9 @@
     <!-- Featured story -->
     <section id="featured" class="hidden mb-10"></section>
 
-    <!-- Ad slot: in-content, between the featured story and the grid -->
+    <!-- Ad slot: in-content -->
     <div class="mb-10 w-full">
-      <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-ADSENSE_CLIENT_ID" data-ad-slot="0000000002" data-ad-format="auto" data-full-width-responsive="true"></ins>
+      <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-2006445566626425" data-ad-slot="0000000002" data-ad-format="auto" data-full-width-responsive="true"></ins>
     </div>
     <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
 
@@ -260,7 +242,7 @@
         <p id="modalMeta" class="font-mono text-[11px] text-mute mb-4"></p>
         <p id="modalDesc" class="text-paper/85 text-sm leading-relaxed mb-6"></p>
         <a id="modalLink" href="#" target="_blank" rel="noopener noreferrer"
-           class="inline-flex items-center gap-2 bg-brass text-ink font-semibold text-sm px-5 py-2.5 rounded-full hover:bg-brass/90 transition-colors">
+            class="inline-flex items-center gap-2 bg-brass text-ink font-semibold text-sm px-5 py-2.5 rounded-full hover:bg-brass/90 transition-colors">
           Read full story
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="w-3.5 h-3.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M7 17L17 7M17 7H8M17 7v9"/>
@@ -270,9 +252,9 @@
     </div>
   </div>
 
-  <!-- Ad slot: bottom banner, above the footer -->
+  <!-- Ad slot: bottom banner -->
   <div class="max-w-7xl w-full mx-auto px-4 sm:px-6">
-    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-ADSENSE_CLIENT_ID" data-ad-slot="0000000003" data-ad-format="auto" data-full-width-responsive="true"></ins>
+    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-2006445566626425" data-ad-slot="0000000003" data-ad-format="auto" data-full-width-responsive="true"></ins>
   </div>
   <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
 
@@ -280,7 +262,6 @@
   <footer class="border-t border-hair mt-10">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-10">
 
-      <!-- Brand row -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div class="flex items-baseline gap-2">
           <span class="font-display text-xl font-semibold tracking-tight text-paper">DATELINE</span>
@@ -291,7 +272,6 @@
 
       <div class="border-t border-hair"></div>
 
-      <!-- Links row -->
       <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6">
         <nav class="flex items-center gap-x-6 gap-y-2 flex-wrap justify-center">
           <a href="/" class="font-mono text-xs uppercase tracking-wider text-mute hover:text-brass transition-colors">Home</a>
@@ -301,7 +281,6 @@
         <p class="font-mono text-[11px] text-mute/60">&copy; <span id="footerYear"></span> DATELINE</p>
       </div>
 
-      <!-- Disclaimer, always last -->
       <p class="font-mono text-[10px] text-mute/50 text-center mt-6 pt-6 border-t border-hair leading-relaxed">
         Headlines sourced live from public Google News RSS feeds · Not affiliated with any publisher · All trademarks belong to their respective owners.
       </p>
