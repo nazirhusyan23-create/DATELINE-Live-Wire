@@ -25,6 +25,11 @@ const UA_HEADERS = {
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
 };
 
+// Vercel Hobby allows up to 300s per function — the default without this
+// export is much lower, which was cutting us off mid-request (the initial
+// Google redirect page alone can be 500KB+ and slow to fetch in full).
+export const config = { maxDuration: 30 };
+
 export default async function handler(req, res) {
   const { url, debug } = req.query;
   if (!url) {
@@ -33,7 +38,7 @@ export default async function handler(req, res) {
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 9000);
+  const timeout = setTimeout(() => controller.abort(), 25000);
   const trace = [];
 
   try {
