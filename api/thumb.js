@@ -1,21 +1,24 @@
 // /api/thumb.js
-// Best-effort article thumbnail fetcher.
+// Best-effort article thumbnail + summary fetcher.
 //
-// Google News RSS does not include images, AND the <link> in each RSS item
-// is a Google redirect page that only resolves to the real publisher URL
-// via client-side JavaScript in a real browser — a plain server-side fetch
-// just gets Google's redirect shell, not the article.
+// Google News RSS gives us neither a real image nor a real summary — its
+// <description> field is just the headline again. And the RSS <link> is a
+// Google redirect page that only resolves to the real publisher URL via
+// client-side JavaScript in a real browser — a plain server-side fetch just
+// gets Google's redirect shell, not the article.
 //
-// To get a real thumbnail we have to:
+// To get real data we have to:
 //   1) Scrape a signature/timestamp/id triple out of that redirect page
 //   2) POST it to Google News' internal (undocumented) batchexecute
 //      endpoint to get back the real publisher URL
-//   3) Fetch THAT page and read its og:image meta tag
+//   3) Fetch THAT page once and read its og:image AND meta description —
+//      the same tags Facebook/Twitter/Google Search use for link previews.
 //
 // This mirrors Google's own internal decoding and is not officially
 // documented or supported — it can break if Google changes the mechanism.
-// Every step fails soft: any failure just returns { image: null } and the
-// frontend falls back to a styled placeholder card, never an error.
+// Every step fails soft: any failure just returns nulls and the frontend
+// falls back to a placeholder image / a plain "read the source" line,
+// never an error.
 
 const UA_HEADERS = {
   "User-Agent":
@@ -44,23 +47,30 @@ export default async function handler(req, res) {
     if (!upstream.ok) {
       clearTimeout(timeout);
       res.setHeader("Cache-Control", "s-maxage=3600");
-      res.status(200).json({ image: null });
+      res.status(200).json({ image: null, description: null });
       return;
     }
 
-    const html = await readPartial(upstream, 200_000);
+    const html = await readPartial(upstream, 250_000);
+
     const image =
       matchMeta(html, "og:image:secure_url") ||
       matchMeta(html, "og:image") ||
       matchMeta(html, "twitter:image");
 
+    const description = cleanSummary(
+      matchMeta(html, "og:description") ||
+      matchMeta(html, "twitter:description") ||
+      matchMeta(html, "description")
+    );
+
     clearTimeout(timeout);
     res.setHeader("Cache-Control", "s-maxage=21600, stale-while-revalidate=86400");
-    res.status(200).json({ image: image || null });
+    res.status(200).json({ image: image || null, description: description || null });
   } catch (err) {
     clearTimeout(timeout);
     res.setHeader("Cache-Control", "s-maxage=1800");
-    res.status(200).json({ image: null });
+    res.status(200).json({ image: null, description: null });
   }
 }
 
@@ -135,4 +145,18 @@ function matchMeta(html, prop) {
   const re2 = new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']${prop}["']`, "i");
   const m = html.match(re1) || html.match(re2);
   return m ? m[1] : null;
+}
+
+function cleanSummary(raw) {
+  if (!raw) return null;
+  const decoded = raw
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#0?39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!decoded || decoded.length < 20) return null; // too short to be a real summary
+  return decoded.length > 280 ? decoded.slice(0, 277).trimEnd() + "…" : decoded;
 }
