@@ -26,7 +26,7 @@ const UA_HEADERS = {
 };
 
 export default async function handler(req, res) {
-  const { url } = req.query;
+  const { url, debug } = req.query;
   if (!url) {
     res.status(400).json({ error: "Missing url" });
     return;
@@ -34,20 +34,23 @@ export default async function handler(req, res) {
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 9000);
+  const trace = [];
 
   try {
-    const targetUrl = (await resolveGoogleNewsUrl(url, controller.signal)) || url;
+    const resolved = await resolveGoogleNewsUrl(url, controller.signal, trace);
+    const targetUrl = resolved || url;
 
     const upstream = await fetch(targetUrl, {
       redirect: "follow",
       signal: controller.signal,
       headers: UA_HEADERS,
     });
+    trace.push({ step: "fetch-target", url: targetUrl, status: upstream.status });
 
     if (!upstream.ok) {
       clearTimeout(timeout);
       res.setHeader("Cache-Control", "s-maxage=3600");
-      res.status(200).json({ image: null, description: null });
+      res.status(200).json({ image: null, description: null, ...(debug ? { trace } : {}) });
       return;
     }
 
@@ -63,29 +66,53 @@ export default async function handler(req, res) {
       matchMeta(html, "twitter:description") ||
       matchMeta(html, "description")
     );
+    trace.push({ step: "extract", foundImage: Boolean(image), foundDescription: Boolean(description) });
 
     clearTimeout(timeout);
-    res.setHeader("Cache-Control", "s-maxage=21600, stale-while-revalidate=86400");
-    res.status(200).json({ image: image || null, description: description || null });
+    res.setHeader("Cache-Control", debug ? "no-store" : "s-maxage=21600, stale-while-revalidate=86400");
+    res.status(200).json({ image: image || null, description: description || null, ...(debug ? { trace } : {}) });
   } catch (err) {
     clearTimeout(timeout);
+    trace.push({ step: "error", message: String(err) });
     res.setHeader("Cache-Control", "s-maxage=1800");
-    res.status(200).json({ image: null, description: null });
+    res.status(200).json({ image: null, description: null, ...(debug ? { trace } : {}) });
   }
 }
 
 // Resolves a news.google.com/rss/articles/... link to the real publisher
-// URL using Google News' internal batchexecute endpoint. Returns null on
-// any failure (missing markers, network error, unexpected response shape).
-async function resolveGoogleNewsUrl(url, signal) {
-  if (!url.includes("news.google.com")) return url;
+// URL. Tries a few strategies, cheapest/most-likely-to-work first, and
+// falls through on any failure — never throws.
+async function resolveGoogleNewsUrl(url, signal, trace = []) {
+  if (!url.includes("news.google.com")) {
+    trace.push({ step: "resolve", note: "not a google news link, using as-is" });
+    return url;
+  }
 
-  const pageRes = await fetch(url, { signal, headers: UA_HEADERS });
-  const html = await pageRes.text();
+  let html;
+  try {
+    const pageRes = await fetch(url, { signal, headers: UA_HEADERS });
+    html = await pageRes.text();
+    trace.push({ step: "fetch-redirect-page", status: pageRes.status, length: html.length });
+  } catch (err) {
+    trace.push({ step: "fetch-redirect-page", error: String(err) });
+    return null;
+  }
 
+  // Strategy 1: a plain <link rel="canonical"> or meta-refresh sometimes
+  // points straight at the real article — cheap to check, no extra request.
+  const canonical =
+    firstMatch(html, /<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i) ||
+    firstMatch(html, /<meta[^>]+http-equiv=["']refresh["'][^>]+content=["'][^"']*url=([^"'>]+)["']/i);
+  if (canonical && !canonical.includes("news.google.com")) {
+    trace.push({ step: "resolve-canonical", found: canonical });
+    return canonical;
+  }
+
+  // Strategy 2: Google's internal signature-based decode endpoint.
   const signature = firstMatch(html, /data-n-a-sg="([^"]+)"/);
   const timestamp = firstMatch(html, /data-n-a-ts="([^"]+)"/);
   const articleId = firstMatch(html, /data-n-a-id="([^"]+)"/);
+  trace.push({ step: "resolve-signature-markers", hasSignature: Boolean(signature), hasTimestamp: Boolean(timestamp), hasArticleId: Boolean(articleId) });
   if (!signature || !timestamp || !articleId) return null;
 
   const innerParams = [
@@ -98,24 +125,40 @@ async function resolveGoogleNewsUrl(url, signal) {
   ];
   const fReq = JSON.stringify([[["Fbv4je", JSON.stringify(innerParams)]]]);
 
-  const decodeRes = await fetch("https://news.google.com/_/DotsSplashUi/data/batchexecute", {
-    method: "POST",
-    signal,
-    headers: {
-      ...UA_HEADERS,
-      "content-type": "application/x-www-form-urlencoded;charset=UTF-8",
-      "referer": "https://news.google.com/",
-    },
-    body: new URLSearchParams({ "f.req": fReq }).toString(),
-  });
-  const text = await decodeRes.text();
+  let text;
+  try {
+    const decodeRes = await fetch("https://news.google.com/_/DotsSplashUi/data/batchexecute", {
+      method: "POST",
+      signal,
+      headers: {
+        ...UA_HEADERS,
+        "content-type": "application/x-www-form-urlencoded;charset=UTF-8",
+        "referer": "https://news.google.com/",
+      },
+      body: new URLSearchParams({ "f.req": fReq }).toString(),
+    });
+    text = await decodeRes.text();
+    trace.push({ step: "batchexecute", status: decodeRes.status, length: text.length });
+  } catch (err) {
+    trace.push({ step: "batchexecute", error: String(err) });
+    return null;
+  }
 
   const line = text.split("\n").find((l) => l.trim().startsWith('[["wrb.fr"'));
-  if (!line) return null;
+  if (!line) {
+    trace.push({ step: "batchexecute-parse", note: "no wrb.fr line found", sample: text.slice(0, 200) });
+    return null;
+  }
 
-  const outer = JSON.parse(line);
-  const inner = JSON.parse(outer[0][2]);
-  return inner[1] || null;
+  try {
+    const outer = JSON.parse(line);
+    const inner = JSON.parse(outer[0][2]);
+    trace.push({ step: "batchexecute-parse", found: Boolean(inner[1]) });
+    return inner[1] || null;
+  } catch (err) {
+    trace.push({ step: "batchexecute-parse", error: String(err) });
+    return null;
+  }
 }
 
 function firstMatch(html, re) {
