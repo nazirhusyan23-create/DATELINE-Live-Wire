@@ -237,6 +237,165 @@
       <p id="errorText"></p>
     </div>
 
+    <!-- ============ TOOLS (Gold / Zakat / Currency / EMI calculators) ============ -->
+    <section id="toolsSection" class="hidden mb-10">
+
+      <div class="mb-6 flex items-center justify-between flex-wrap gap-2">
+        <p id="toolsRatesLine" class="font-mono text-[11px] text-mute">Loading live market rates…</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+        <!-- Gold Rate Calculator -->
+        <div class="rounded-xl border border-hair bg-panel p-5">
+          <h3 class="font-display text-lg text-paper mb-1">🥇 Gold Rate Calculator</h3>
+          <p class="font-mono text-[11px] text-mute mb-4">Tola / gram rates from the live market ticker</p>
+
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div>
+              <label class="block font-mono text-[10px] uppercase tracking-wider text-mute mb-1.5">Purity</label>
+              <select id="goldKarat" class="w-full bg-panel2 border border-hair rounded-lg px-3 py-2 text-sm text-paper outline-none focus:border-brass/60">
+                <option value="24">24K (999)</option>
+                <option value="22" selected>22K (916)</option>
+                <option value="21">21K (875)</option>
+                <option value="18">18K (750)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-mono text-[10px] uppercase tracking-wider text-mute mb-1.5">Unit</label>
+              <select id="goldUnit" class="w-full bg-panel2 border border-hair rounded-lg px-3 py-2 text-sm text-paper outline-none focus:border-brass/60">
+                <option value="tola" selected>Tola (11.6638g)</option>
+                <option value="gram">Gram</option>
+                <option value="10gram">10 Grams</option>
+                <option value="ounce">Ounce</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="block font-mono text-[10px] uppercase tracking-wider text-mute mb-1.5">Quantity</label>
+            <input id="goldQty" type="number" min="0" step="any" value="1" class="w-full bg-panel2 border border-hair rounded-lg px-3 py-2 text-sm text-paper outline-none focus:border-brass/60" />
+          </div>
+
+          <div class="rounded-lg border border-brass/30 bg-panel2 px-4 py-3">
+            <p class="font-mono text-[10px] uppercase tracking-wider text-mute mb-1">Estimated Value</p>
+            <p id="goldResult" class="font-display text-2xl text-brass">—</p>
+            <p id="goldBreakdown" class="font-mono text-[11px] text-mute mt-1"></p>
+          </div>
+        </div>
+
+        <!-- Zakat Calculator -->
+        <div class="rounded-xl border border-hair bg-panel p-5">
+          <h3 class="font-display text-lg text-paper mb-1">☪️ Zakat Calculator</h3>
+          <p class="font-mono text-[11px] text-mute mb-4">Gold, silver &amp; savings — nisab checked against live rates</p>
+
+          <div class="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label class="block font-mono text-[10px] uppercase tracking-wider text-mute mb-1.5">Gold owned (g)</label>
+              <input id="zakatGoldGrams" type="number" min="0" step="any" value="0" class="w-full bg-panel2 border border-hair rounded-lg px-3 py-2 text-sm text-paper outline-none focus:border-brass/60" />
+            </div>
+            <div>
+              <label class="block font-mono text-[10px] uppercase tracking-wider text-mute mb-1.5">Gold purity</label>
+              <select id="zakatGoldKarat" class="w-full bg-panel2 border border-hair rounded-lg px-3 py-2 text-sm text-paper outline-none focus:border-brass/60">
+                <option value="24">24K (999)</option>
+                <option value="22" selected>22K (916)</option>
+                <option value="21">21K (875)</option>
+                <option value="18">18K (750)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="block font-mono text-[10px] uppercase tracking-wider text-mute mb-1.5">Silver owned (grams)</label>
+            <input id="zakatSilverGrams" type="number" min="0" step="any" value="0" class="w-full bg-panel2 border border-hair rounded-lg px-3 py-2 text-sm text-paper outline-none focus:border-brass/60" />
+          </div>
+
+          <div class="mb-3">
+            <label class="block font-mono text-[10px] uppercase tracking-wider text-mute mb-1.5">Cash &amp; bank balances (PKR)</label>
+            <input id="zakatCash" type="number" min="0" step="any" value="0" class="w-full bg-panel2 border border-hair rounded-lg px-3 py-2 text-sm text-paper outline-none focus:border-brass/60" />
+          </div>
+
+          <div class="mb-4">
+            <label class="block font-mono text-[10px] uppercase tracking-wider text-mute mb-1.5">Other zakatable assets (PKR)</label>
+            <input id="zakatOther" type="number" min="0" step="any" value="0" class="w-full bg-panel2 border border-hair rounded-lg px-3 py-2 text-sm text-paper outline-none focus:border-brass/60" />
+          </div>
+
+          <div class="mb-4">
+            <label class="block font-mono text-[10px] uppercase tracking-wider text-mute mb-1.5">Nisab basis</label>
+            <select id="zakatNisabBasis" class="w-full bg-panel2 border border-hair rounded-lg px-3 py-2 text-sm text-paper outline-none focus:border-brass/60">
+              <option value="silver" selected>Silver (612.36g) — lower threshold</option>
+              <option value="gold">Gold (87.48g)</option>
+            </select>
+          </div>
+
+          <div class="rounded-lg border border-brass/30 bg-panel2 px-4 py-3">
+            <p class="font-mono text-[10px] uppercase tracking-wider text-mute mb-1">Zakat Payable (2.5%)</p>
+            <p id="zakatResult" class="font-display text-2xl text-brass">—</p>
+            <p id="zakatBreakdown" class="font-mono text-[11px] text-mute mt-1"></p>
+          </div>
+          <p class="font-mono text-[10px] text-mute/60 mt-3 leading-relaxed">Simplified estimate for guidance only — excludes debts and business inventory. Consult a scholar for your specific situation.</p>
+        </div>
+
+        <!-- Currency Converter -->
+        <div class="rounded-xl border border-hair bg-panel p-5">
+          <h3 class="font-display text-lg text-paper mb-1">💱 Currency Converter</h3>
+          <p class="font-mono text-[11px] text-mute mb-4">Live FX rates from the market ticker</p>
+
+          <div class="mb-4">
+            <label class="block font-mono text-[10px] uppercase tracking-wider text-mute mb-1.5">Amount</label>
+            <input id="fxAmount" type="number" min="0" step="any" value="1" class="w-full bg-panel2 border border-hair rounded-lg px-3 py-2 text-sm text-paper outline-none focus:border-brass/60" />
+          </div>
+
+          <div class="flex items-end gap-2 mb-4">
+            <div class="flex-1">
+              <label class="block font-mono text-[10px] uppercase tracking-wider text-mute mb-1.5">From</label>
+              <select id="fxFrom" class="w-full bg-panel2 border border-hair rounded-lg px-3 py-2 text-sm text-paper outline-none focus:border-brass/60"></select>
+            </div>
+            <button id="fxSwapBtn" type="button" title="Swap currencies" class="shrink-0 grid place-items-center w-9 h-9 rounded-full border border-hair text-mute hover:text-brass hover:border-brass/50 transition-colors mb-0.5">⇄</button>
+            <div class="flex-1">
+              <label class="block font-mono text-[10px] uppercase tracking-wider text-mute mb-1.5">To</label>
+              <select id="fxTo" class="w-full bg-panel2 border border-hair rounded-lg px-3 py-2 text-sm text-paper outline-none focus:border-brass/60"></select>
+            </div>
+          </div>
+
+          <div class="rounded-lg border border-brass/30 bg-panel2 px-4 py-3">
+            <p class="font-mono text-[10px] uppercase tracking-wider text-mute mb-1">Converted Amount</p>
+            <p id="fxResult" class="font-display text-2xl text-brass">—</p>
+            <p id="fxBreakdown" class="font-mono text-[11px] text-mute mt-1"></p>
+          </div>
+        </div>
+
+        <!-- Loan / EMI Calculator -->
+        <div class="rounded-xl border border-hair bg-panel p-5">
+          <h3 class="font-display text-lg text-paper mb-1">🏦 Loan / EMI Calculator</h3>
+          <p class="font-mono text-[11px] text-mute mb-4">Monthly installment on a fixed-rate loan</p>
+
+          <div class="mb-3">
+            <label class="block font-mono text-[10px] uppercase tracking-wider text-mute mb-1.5">Loan amount (PKR)</label>
+            <input id="emiPrincipal" type="number" min="0" step="any" value="1000000" class="w-full bg-panel2 border border-hair rounded-lg px-3 py-2 text-sm text-paper outline-none focus:border-brass/60" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div>
+              <label class="block font-mono text-[10px] uppercase tracking-wider text-mute mb-1.5">Annual rate (%)</label>
+              <input id="emiRate" type="number" min="0" step="any" value="20" class="w-full bg-panel2 border border-hair rounded-lg px-3 py-2 text-sm text-paper outline-none focus:border-brass/60" />
+            </div>
+            <div>
+              <label class="block font-mono text-[10px] uppercase tracking-wider text-mute mb-1.5">Tenure (months)</label>
+              <input id="emiMonths" type="number" min="1" step="1" value="36" class="w-full bg-panel2 border border-hair rounded-lg px-3 py-2 text-sm text-paper outline-none focus:border-brass/60" />
+            </div>
+          </div>
+
+          <div class="rounded-lg border border-brass/30 bg-panel2 px-4 py-3">
+            <p class="font-mono text-[10px] uppercase tracking-wider text-mute mb-1">Monthly Installment</p>
+            <p id="emiResult" class="font-display text-2xl text-brass">—</p>
+            <p id="emiBreakdown" class="font-mono text-[11px] text-mute mt-1"></p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
     <!-- Featured story -->
     <section id="featured" class="hidden mb-10"></section>
 
