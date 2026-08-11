@@ -26,6 +26,7 @@ const CATEGORIES = [
   { id: "health",        label: "Health",        icon: "✚" },
   { id: "entertainment", label: "Entertainment", icon: "♫" },
   { id: "sports",        label: "Sports",        icon: "●" },
+  { id: "tools",         label: "Tools",         icon: "🧮" },
 ];
 
 const state = {
@@ -69,6 +70,38 @@ const modalBookmarkBtn = document.getElementById("modalBookmarkBtn");
 const weatherBody    = document.getElementById("weatherBody");
 const weatherCityForm = document.getElementById("weatherCityForm");
 const weatherCityInput = document.getElementById("weatherCityInput");
+
+// ---------- tools (calculators) DOM refs ----------
+const toolsSection   = document.getElementById("toolsSection");
+const toolsRatesLine = document.getElementById("toolsRatesLine");
+
+const goldKarat  = document.getElementById("goldKarat");
+const goldUnit   = document.getElementById("goldUnit");
+const goldQty    = document.getElementById("goldQty");
+const goldResult = document.getElementById("goldResult");
+const goldBreakdown = document.getElementById("goldBreakdown");
+
+const zakatGoldGrams  = document.getElementById("zakatGoldGrams");
+const zakatGoldKarat  = document.getElementById("zakatGoldKarat");
+const zakatSilverGrams = document.getElementById("zakatSilverGrams");
+const zakatCash       = document.getElementById("zakatCash");
+const zakatOther      = document.getElementById("zakatOther");
+const zakatNisabBasis = document.getElementById("zakatNisabBasis");
+const zakatResult     = document.getElementById("zakatResult");
+const zakatBreakdown  = document.getElementById("zakatBreakdown");
+
+const fxAmount  = document.getElementById("fxAmount");
+const fxFrom    = document.getElementById("fxFrom");
+const fxTo      = document.getElementById("fxTo");
+const fxSwapBtn = document.getElementById("fxSwapBtn");
+const fxResult  = document.getElementById("fxResult");
+const fxBreakdown = document.getElementById("fxBreakdown");
+
+const emiPrincipal = document.getElementById("emiPrincipal");
+const emiRate       = document.getElementById("emiRate");
+const emiMonths     = document.getElementById("emiMonths");
+const emiResult     = document.getElementById("emiResult");
+const emiBreakdown  = document.getElementById("emiBreakdown");
 
 // ---------- text helpers ----------
 
@@ -475,7 +508,7 @@ function notificationsSupported() {
 // showNotification(). Desktop browsers support both, so registering this
 // unconditionally makes notifications work the same way everywhere.
 // Requires a secure context (https:// or localhost) — file:// won't work.
-async function r9yMnTm4NSzvG9rrwjM2ec8xZgh1cafXH8() {
+async function rahJ91ZuNL8Y2px8iYciYeHN8sfSh5eXH8() {
   if (!("serviceWorker" in navigator)) return null;
   try {
     const reg = await navigator.serviceWorker.register("/sw.js");
@@ -510,7 +543,7 @@ async function enableNotifications() {
   notifyEnabled = perm === "granted";
   localStorage.setItem(NOTIFY_PREF_KEY, notifyEnabled ? "1" : "0");
   if (notifyEnabled) {
-    if (!notifySwRegistration) await r9yMnTm4NSzvG9rrwjM2ec8xZgh1cafXH8();
+    if (!notifySwRegistration) await rahJ91ZuNL8Y2px8iYciYeHN8sfSh5eXH8();
     pushNotification("DATELINE — Live Wire", "You're set. Keep this site open (even in a background tab) and you'll get alerts here for breaking news, weather changes, and market moves.");
   }
   updateNotifyBtn();
@@ -565,6 +598,205 @@ async function backgroundCheckBreakingNews() {
   } catch {
     // Silent — this is a background check, not user-initiated, so we don't
     // want to surface network errors as an alert.
+  }
+}
+
+// ---------- tools: shared unit constants ----------
+const GRAMS_PER_TROY_OUNCE = 31.1034768;
+const GRAMS_PER_TOLA = 11.6638;
+const GOLD_NISAB_GRAMS = 87.48;   // ~7.5 tola
+const SILVER_NISAB_GRAMS = 612.36; // ~52.5 tola
+const KARAT_PURITY = { 24: 1, 22: 22 / 24, 21: 21 / 24, 18: 18 / 24 };
+const PKR_FMT = new Intl.NumberFormat("en-PK", { maximumFractionDigits: 0 });
+
+function pkr(n) {
+  return Number.isFinite(n) ? `Rs ${PKR_FMT.format(n)}` : "—";
+}
+
+// USD-per-gram spot price for pure (24K) gold/silver — the base every
+// calculator below converts from. Returns null until the ticker has fetched
+// real data at least once.
+function goldUsdPerGram() {
+  return financeData.gold != null ? financeData.gold / GRAMS_PER_TROY_OUNCE : null;
+}
+function silverUsdPerGram() {
+  return financeData.silver != null ? financeData.silver / GRAMS_PER_TROY_OUNCE : null;
+}
+
+// PKR-per-gram at a given karat purity (24K = pure). Null if live rates
+// (gold price or USD/PKR) aren't loaded yet.
+function goldPkrPerGram(karat = 24) {
+  const usdGram = goldUsdPerGram();
+  if (usdGram == null || financeData.usdPkr == null) return null;
+  return usdGram * financeData.usdPkr * (KARAT_PURITY[karat] ?? 1);
+}
+function silverPkrPerGram() {
+  const usdGram = silverUsdPerGram();
+  if (usdGram == null || financeData.usdPkr == null) return null;
+  return usdGram * financeData.usdPkr;
+}
+
+const GOLD_UNIT_GRAMS = { gram: 1, tola: GRAMS_PER_TOLA, "10gram": 10, ounce: GRAMS_PER_TROY_OUNCE };
+
+// ---------- tools: header rates line ----------
+function refreshToolsRates() {
+  if (!toolsRatesLine) return;
+  const parts = [];
+  parts.push(financeData.gold != null ? `Gold $${financeData.gold.toFixed(2)}/oz` : "Gold —");
+  parts.push(financeData.silver != null ? `Silver $${financeData.silver.toFixed(2)}/oz` : "Silver —");
+  parts.push(financeData.usdPkr != null ? `USD/PKR ${financeData.usdPkr.toFixed(2)}` : "USD/PKR —");
+  toolsRatesLine.textContent = `Live rates · ${parts.join(" · ")} · refreshes every 60s`;
+
+  populateFxSelects();
+}
+
+// Populates the From/To currency dropdowns from whatever pairs the FX
+// table actually returned — avoids hardcoding a currency list that could
+// drift out of sync with the live data.
+let fxSelectsPopulated = false;
+function populateFxSelects() {
+  if (fxSelectsPopulated || !financeData.fxRates || !fxFrom || !fxTo) return;
+  const preferred = ["PKR", "USD", "GBP", "EUR", "SAR", "AED", "AUD", "CAD", "CNY", "INR"];
+  const available = Object.keys(financeData.fxRates);
+  const ordered = [...preferred.filter(c => c === "USD" || available.includes(c)), ...available.filter(c => !preferred.includes(c))];
+
+  const optionsHtml = ordered.map(c => `<option value="${c}">${c}</option>`).join("");
+  fxFrom.innerHTML = optionsHtml;
+  fxTo.innerHTML = optionsHtml;
+  fxFrom.value = "USD";
+  fxTo.value = "PKR";
+  fxSelectsPopulated = true;
+}
+
+// ---------- tools: Gold Rate Calculator ----------
+function calcGoldRate() {
+  if (!goldResult) return;
+  const karat = Number(goldKarat.value);
+  const unitGrams = GOLD_UNIT_GRAMS[goldUnit.value] ?? 1;
+  const qty = Number(goldQty.value) || 0;
+
+  const perGram = goldPkrPerGram(karat);
+  if (perGram == null) {
+    goldResult.textContent = "Waiting for live rate…";
+    goldBreakdown.textContent = "";
+    return;
+  }
+  const total = perGram * unitGrams * qty;
+  goldResult.textContent = pkr(total);
+  goldBreakdown.textContent = `${pkr(perGram)}/gram · ${pkr(perGram * GRAMS_PER_TOLA)}/tola at ${karat}K`;
+}
+
+// ---------- tools: Zakat Calculator ----------
+function calcZakat() {
+  if (!zakatResult) return;
+  const goldGrams = Number(zakatGoldGrams.value) || 0;
+  const goldKaratVal = Number(zakatGoldKarat.value);
+  const silverGrams = Number(zakatSilverGrams.value) || 0;
+  const cash = Number(zakatCash.value) || 0;
+  const other = Number(zakatOther.value) || 0;
+  const basis = zakatNisabBasis.value;
+
+  const goldGramPkr = goldPkrPerGram(goldKaratVal);
+  const silverGramPkr = silverPkrPerGram();
+  const goldNisabGramPkr = goldPkrPerGram(24);
+
+  if (goldGramPkr == null || silverGramPkr == null || goldNisabGramPkr == null) {
+    zakatResult.textContent = "Waiting for live rate…";
+    zakatBreakdown.textContent = "";
+    return;
+  }
+
+  const goldValue = goldGrams * goldGramPkr;
+  const silverValue = silverGrams * silverGramPkr;
+  const totalWealth = goldValue + silverValue + cash + other;
+
+  const nisabValue = basis === "gold"
+    ? GOLD_NISAB_GRAMS * goldNisabGramPkr
+    : SILVER_NISAB_GRAMS * silverGramPkr;
+
+  const meetsNisab = totalWealth >= nisabValue;
+  const zakatDue = meetsNisab ? totalWealth * 0.025 : 0;
+
+  zakatResult.textContent = meetsNisab ? pkr(zakatDue) : "No zakat due";
+  zakatBreakdown.textContent = meetsNisab
+    ? `Total wealth ${pkr(totalWealth)} · Nisab ${pkr(nisabValue)}`
+    : `Total wealth ${pkr(totalWealth)} is below the nisab threshold of ${pkr(nisabValue)}`;
+}
+
+// ---------- tools: Currency Converter ----------
+function calcFx() {
+  if (!fxResult) return;
+  if (!financeData.fxRates) {
+    fxResult.textContent = "Waiting for live rates…";
+    fxBreakdown.textContent = "";
+    return;
+  }
+  const amount = Number(fxAmount.value) || 0;
+  const from = fxFrom.value;
+  const to = fxTo.value;
+  const rates = financeData.fxRates;
+
+  const fromRate = from === "USD" ? 1 : rates[from];
+  const toRate = to === "USD" ? 1 : rates[to];
+  if (fromRate == null || toRate == null) {
+    fxResult.textContent = "Rate unavailable";
+    fxBreakdown.textContent = "";
+    return;
+  }
+
+  const valueInUsd = amount / fromRate;
+  const converted = valueInUsd * toRate;
+  const impliedRate = toRate / fromRate;
+
+  fxResult.textContent = `${converted.toLocaleString("en-US", { maximumFractionDigits: 2 })} ${to}`;
+  fxBreakdown.textContent = `1 ${from} = ${impliedRate.toLocaleString("en-US", { maximumFractionDigits: 4 })} ${to}`;
+}
+
+// ---------- tools: Loan / EMI Calculator ----------
+// Pure math — no market data involved, included as it fits naturally
+// alongside the other financial tools.
+function calcEmi() {
+  if (!emiResult) return;
+  const principal = Number(emiPrincipal.value) || 0;
+  const annualRate = Number(emiRate.value) || 0;
+  const months = Math.max(1, Number(emiMonths.value) || 1);
+
+  const monthlyRate = annualRate / 12 / 100;
+  let emi;
+  if (monthlyRate === 0) {
+    emi = principal / months;
+  } else {
+    const factor = Math.pow(1 + monthlyRate, months);
+    emi = (principal * monthlyRate * factor) / (factor - 1);
+  }
+  const totalPayment = emi * months;
+  const totalInterest = totalPayment - principal;
+
+  emiResult.textContent = pkr(emi);
+  emiBreakdown.textContent = `Total payment ${pkr(totalPayment)} · Total interest ${pkr(totalInterest)}`;
+}
+
+function recalcAllTools() {
+  calcGoldRate();
+  calcZakat();
+  calcFx();
+  calcEmi();
+}
+
+function initToolsListeners() {
+  [goldKarat, goldUnit, goldQty].forEach(el => el && el.addEventListener("input", calcGoldRate));
+  [zakatGoldGrams, zakatGoldKarat, zakatSilverGrams, zakatCash, zakatOther, zakatNisabBasis]
+    .forEach(el => el && el.addEventListener("input", calcZakat));
+  [fxAmount, fxFrom, fxTo].forEach(el => el && el.addEventListener("input", calcFx));
+  [emiPrincipal, emiRate, emiMonths].forEach(el => el && el.addEventListener("input", calcEmi));
+
+  if (fxSwapBtn) {
+    fxSwapBtn.addEventListener("click", () => {
+      const tmp = fxFrom.value;
+      fxFrom.value = fxTo.value;
+      fxTo.value = tmp;
+      calcFx();
+    });
   }
 }
 
@@ -708,8 +940,11 @@ function renderTicker(articles) {
 }
 
 // ---------- financial ticker ----------
-// LIVE:      USD/PKR (open.er-api.com) and Gold/oz (gold-api.com) — both
-//            free, keyless, CORS-enabled endpoints, no simulation involved.
+// LIVE:      USD/PKR + full FX table (open.er-api.com), Gold/oz and
+//            Silver/oz (gold-api.com) — all free, keyless, CORS-enabled
+//            endpoints, no simulation involved. The Tools tab calculators
+//            (Gold Rate, Zakat, Currency Converter) read straight out of
+//            `financeData` below — no extra API calls of their own.
 // SIMULATED: the market index. There is no free, keyless, real-time index
 //            feed (KSE-100 / Nasdaq / etc. all require a paid or signup-gated
 //            API key). Swap fetchMarketIndex() for a real provider (e.g. a
@@ -717,17 +952,21 @@ function renderTicker(articles) {
 //            /api endpoint, so the key stays server-side) to make it live.
 const financeData = {
   usdPkr: null,
-  gold: null,
-  index: 78250, // simulated baseline
+  fxRates: null, // full { CCY: rate } table, base USD — powers the Currency Converter
+  gold: null,    // USD per troy ounce (XAU)
+  silver: null,  // USD per troy ounce (XAG)
+  index: 78250,  // simulated baseline
 };
 let financeInitialized = false;
 
-async function fetchUsdPkr() {
+// Full FX table, base USD. A single call gives us every pair the Currency
+// Converter needs (PKR included) — no separate per-pair requests.
+async function fetchFxRates() {
   try {
     const res = await fetch("https://open.er-api.com/v6/latest/USD");
     if (!res.ok) return null;
     const data = await res.json();
-    return data?.rates?.PKR || null;
+    return data?.rates || null;
   } catch {
     return null;
   }
@@ -737,6 +976,18 @@ async function fetchUsdPkr() {
 async function fetchGoldPrice() {
   try {
     const res = await fetch("https://api.gold-api.com/price/XAU");
+    if (!res.ok) return null;
+    const data = await res.json();
+    return typeof data?.price === "number" ? data.price : null;
+  } catch {
+    return null;
+  }
+}
+
+// Live XAG/USD (silver) spot price — same free, keyless provider as gold.
+async function fetchSilverPrice() {
+  try {
+    const res = await fetch("https://api.gold-api.com/price/XAG");
     if (!res.ok) return null;
     const data = await res.json();
     return typeof data?.price === "number" ? data.price : null;
@@ -775,11 +1026,12 @@ function tickerPill({ icon, label, value, chip, muted }) {
 }
 
 async function renderFinancialTicker() {
-  const [rate, gold] = await Promise.all([fetchUsdPkr(), fetchGoldPrice()]);
+  const [rates, gold, silver] = await Promise.all([fetchFxRates(), fetchGoldPrice(), fetchSilverPrice()]);
 
   const prevGold = financeData.gold;
-  if (rate) financeData.usdPkr = rate;
+  if (rates) { financeData.fxRates = rates; financeData.usdPkr = rates.PKR || financeData.usdPkr; }
   if (gold) financeData.gold = gold;
+  if (silver) financeData.silver = silver;
   const goldDelta = financeInitialized && prevGold != null && financeData.gold != null ? financeData.gold - prevGold : 0;
 
   // Simulated tick for the index only (see note above fetchGoldPrice).
@@ -793,6 +1045,9 @@ async function renderFinancialTicker() {
     financeData.gold != null
       ? tickerPill({ icon: "🥇", label: "Gold (oz)", value: `$${financeData.gold.toFixed(2)}`, chip: changeChip(goldDelta) })
       : tickerPill({ icon: "🥇", label: "Gold (oz)", value: "unavailable", muted: true }),
+    financeData.silver != null
+      ? tickerPill({ icon: "🥈", label: "Silver (oz)", value: `$${financeData.silver.toFixed(2)}` })
+      : tickerPill({ icon: "🥈", label: "Silver (oz)", value: "unavailable", muted: true }),
     tickerPill({ icon: "📊", label: "Market Index*", value: financeData.index.toFixed(0), chip: changeChip(indexDelta, { decimals: 0 }) }),
   ];
   const strip = items.join("");
@@ -806,6 +1061,11 @@ async function renderFinancialTicker() {
     }
   }
   financeInitialized = true;
+
+  // Keep the Tools tab calculators (Gold Rate / Zakat / Currency Converter)
+  // in sync with the same data the ticker just fetched — no separate poll.
+  refreshToolsRates();
+  recalcAllTools();
 }
 
 // ---------- modal ----------
@@ -872,14 +1132,32 @@ async function loadFeed() {
 
   const isSearch = !!state.query;
   const isSaved = state.category === "saved";
+  const isTools = state.category === "tools";
 
-  sectionTitle.textContent = isSaved
-    ? "Saved for Later"
-    : isSearch
-      ? `Results for "${state.query}"`
-      : categoryMeta(state.category).label;
+  sectionTitle.textContent = isTools
+    ? "Financial Tools"
+    : isSaved
+      ? "Saved for Later"
+      : isSearch
+        ? `Results for "${state.query}"`
+        : categoryMeta(state.category).label;
 
   updateSavedBtnLabel();
+
+  if (isTools) {
+    showSkeletons(false);
+    gridEl.classList.add("hidden");
+    featuredEl.classList.add("hidden");
+    emptyStateEl.classList.add("hidden");
+    errorBanner.classList.add("hidden");
+    toolsSection.classList.remove("hidden");
+    resultCount.textContent = "";
+    refreshToolsRates();
+    recalcAllTools();
+    state.loading = false;
+    return;
+  }
+  toolsSection.classList.add("hidden");
 
   if (isSaved) {
     showSkeletons(false);
@@ -1108,7 +1386,8 @@ if (footerYearEl) footerYearEl.textContent = new Date().getFullYear();
 renderCategories();
 updateSavedBtnLabel();
 updateNotifyBtn();
-r9yMnTm4NSzvG9rrwjM2ec8xZgh1cafXH8();
+initToolsListeners();
+rahJ91ZuNL8Y2px8iYciYeHN8sfSh5eXH8();
 loadFeed();
 detectLocationAndLoadWeather();
 renderFinancialTicker();
