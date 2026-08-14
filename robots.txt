@@ -1,0 +1,13 @@
+# DATELINE Live Wire — robots.txt
+# https://www.datelinelivewire.com/robots.txt
+
+User-agent: *
+Allow: /
+
+# Don't let crawlers index the serverless API endpoints or PWA service worker —
+# they're data/functional routes, not content pages.
+Disallow: /api/
+Disallow: /sw.js
+
+# Sitemap location
+Sitemap: https://www.datelinelivewire.com/sitemap.xml
