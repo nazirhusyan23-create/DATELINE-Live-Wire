@@ -311,8 +311,9 @@ async function enrichCard(cardEl) {
   if (result.image) {
     const thumbSlot = cardEl.querySelector(".thumb-slot");
     if (thumbSlot) {
+      const headlineEl = cardEl.querySelector("h2, h3");
       const img = new Image();
-      img.alt = "";
+      img.alt = headlineEl ? headlineEl.textContent.trim() : "";
       img.className = thumbSlot.dataset.imgClass || "w-full h-full object-cover";
       img.onload = () => {
         // Preserve any badge overlays (Featured / Breaking) already in the slot
@@ -1094,7 +1095,7 @@ async function openModal(article) {
 
   const image = staticImg || result?.image;
   if (image) {
-    modalImageWrap.innerHTML = `<img src="${image}" alt="" class="w-full h-56 object-cover" onerror="this.parentElement.innerHTML=''"/>`;
+    modalImageWrap.innerHTML = `<img src="${image}" alt="${escapeAttr(article._headline || "")}" class="w-full h-56 object-cover" onerror="this.parentElement.innerHTML=''"/>`;
   }
   if (!article._desc && result?.description) {
     modalDesc.textContent = result.description;
