@@ -3,8 +3,78 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>DATELINE — Live Wire</title>
-<meta name="description" content="A live news and current affairs reader — top headlines across World, Technology, Sports and Business." />
+
+<!-- ============ PRIMARY SEO ============ -->
+<title>DATELINE Live Wire — Real-Time World News, Headlines &amp; Markets</title>
+<meta name="description" content="Live headlines across World, Pakistan, Business, Technology, Science, Health, Entertainment and Sports — plus real-time weather and market rates. Free, fast, no clutter." />
+<meta name="keywords" content="live news, breaking news, world news, Pakistan news, business news, technology news, sports news, gold rate calculator, zakat calculator, currency converter, news wire" />
+<meta name="author" content="DATELINE Live Wire" />
+<meta name="robots" content="index, follow, max-image-preview:large" />
+<link rel="canonical" href="https://www.datelinelivewire.com/" />
+<meta name="theme-color" content="#0B0C0E" />
+
+<!-- ============ OPEN GRAPH ============ -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="DATELINE Live Wire" />
+<meta property="og:title" content="DATELINE Live Wire — Real-Time World News, Headlines &amp; Markets" />
+<meta property="og:description" content="Live headlines across World, Pakistan, Business, Technology, Science, Health, Entertainment and Sports — plus real-time weather and market rates." />
+<meta property="og:url" content="https://www.datelinelivewire.com/" />
+<meta property="og:image" content="https://www.datelinelivewire.com/og-image.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="DATELINE Live Wire — real-time news reader" />
+<meta property="og:locale" content="en_US" />
+
+<!-- ============ TWITTER CARD ============ -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="DATELINE Live Wire — Real-Time World News, Headlines &amp; Markets" />
+<meta name="twitter:description" content="Live headlines across World, Pakistan, Business, Technology, Science, Health, Entertainment and Sports — plus real-time weather and market rates." />
+<meta name="twitter:image" content="https://www.datelinelivewire.com/og-image.jpg" />
+<meta name="twitter:image:alt" content="DATELINE Live Wire — real-time news reader" />
+
+<!-- ============ FAVICONS ============ -->
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/site.webmanifest" />
+
+<!-- ============ STRUCTURED DATA ============ -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "@id": "https://www.datelinelivewire.com/#website",
+  "name": "DATELINE Live Wire",
+  "url": "https://www.datelinelivewire.com/",
+  "description": "A live news and current affairs reader with real-time headlines, weather and market tools.",
+  "publisher": { "@id": "https://www.datelinelivewire.com/#organization" },
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://www.datelinelivewire.com/?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "@id": "https://www.datelinelivewire.com/#organization",
+  "name": "DATELINE Live Wire",
+  "url": "https://www.datelinelivewire.com/",
+  "logo": "https://www.datelinelivewire.com/logo.png",
+  "sameAs": []
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.datelinelivewire.com/" }
+  ]
+}
+</script>
 
 <!-- Tailwind (CDN, no build step needed) -->
 <script src="https://cdn.tailwindcss.com"></script>
@@ -152,6 +222,7 @@
           <input
             id="searchInput"
             type="text"
+            aria-label="Search the news wire"
             placeholder="Search the wire — e.g. elections, cricket, markets…"
             class="w-full bg-panel border border-hair rounded-full pl-11 pr-4 py-2.5 text-sm text-paper placeholder:text-mute/70 focus:border-brass/60 outline-none transition-colors"
           />
@@ -162,7 +233,7 @@
       </div>
 
       <!-- Category rail -->
-      <nav class="cat-rail flex items-center gap-1 overflow-x-auto pb-3 -mx-1 px-1" style="scrollbar-width:none;">
+      <nav class="cat-rail flex items-center gap-1 overflow-x-auto pb-3 -mx-1 px-1" style="scrollbar-width:none;" aria-label="News categories">
         <!-- filled by JS -->
       </nav>
     </div>
@@ -228,7 +299,7 @@
 
     <!-- Section label -->
     <div class="flex items-baseline justify-between mb-6">
-      <h1 id="sectionTitle" class="font-display text-xl sm:text-2xl font-medium text-paper">Top Headlines</h1>
+      <h1 id="sectionTitle" class="font-display text-xl sm:text-2xl font-medium text-paper">DATELINE Live Wire — Top Headlines</h1>
       <span id="resultCount" class="font-mono text-[11px] text-mute uppercase tracking-wider"></span>
     </div>
 
@@ -467,7 +538,7 @@
       <div class="border-t border-hair"></div>
 
       <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6">
-        <nav class="flex items-center gap-x-6 gap-y-2 flex-wrap justify-center">
+        <nav class="flex items-center gap-x-6 gap-y-2 flex-wrap justify-center" aria-label="Footer">
           <a href="/" class="font-mono text-xs uppercase tracking-wider text-mute hover:text-brass transition-colors">Home</a>
           <a href="/about.html" class="font-mono text-xs uppercase tracking-wider text-mute hover:text-brass transition-colors">About</a>
           <a href="/privacy.html" class="font-mono text-xs uppercase tracking-wider text-mute hover:text-brass transition-colors">Privacy</a>
