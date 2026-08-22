@@ -569,7 +569,6 @@ async function pushNotification(title, body) {
 }
 
 if (notifyBtn) {
-  notifyBtn.classList.remove("hidden");
   notifyBtn.addEventListener("click", () => {
     if (notifyEnabled && Notification.permission === "granted") {
       notifyEnabled = false;
