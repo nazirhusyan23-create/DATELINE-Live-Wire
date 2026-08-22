@@ -8,7 +8,7 @@
 <title>About DATELINE Live Wire — Our Story &amp; Mission</title>
 <meta name="description" content="DATELINE Live Wire is a fast, distraction-free news reader pulling live headlines across nine categories, plus real-time weather — no algorithm, no clutter." />
 <meta name="robots" content="index, follow" />
-<link rel="canonical" href="https://www.datelinelivewire.com/about.html" />
+<link rel="canonical" href="https://dateline-live-wire.vercel.app/about.html" />
 <meta name="theme-color" content="#0B0C0E" />
 
 <!-- ============ OPEN GRAPH ============ -->
@@ -16,8 +16,8 @@
 <meta property="og:site_name" content="DATELINE Live Wire" />
 <meta property="og:title" content="About DATELINE Live Wire — Our Story &amp; Mission" />
 <meta property="og:description" content="A fast, distraction-free news reader pulling live headlines across nine categories, plus real-time weather — no algorithm, no clutter." />
-<meta property="og:url" content="https://www.datelinelivewire.com/about.html" />
-<meta property="og:image" content="https://www.datelinelivewire.com/og-image.jpg" />
+<meta property="og:url" content="https://dateline-live-wire.vercel.app/about.html" />
+<meta property="og:image" content="https://dateline-live-wire.vercel.app/og-image.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:locale" content="en_US" />
@@ -26,10 +26,12 @@
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="About DATELINE Live Wire — Our Story &amp; Mission" />
 <meta name="twitter:description" content="A fast, distraction-free news reader pulling live headlines across nine categories, plus real-time weather — no algorithm, no clutter." />
-<meta name="twitter:image" content="https://www.datelinelivewire.com/og-image.jpg" />
+<meta name="twitter:image" content="https://dateline-live-wire.vercel.app/og-image.png" />
 
 <link rel="icon" href="/favicon.ico" sizes="any" />
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/site.webmanifest" />
 
 <!-- ============ STRUCTURED DATA ============ -->
 <script type="application/ld+json">
@@ -37,13 +39,13 @@
   "@context": "https://schema.org",
   "@type": "AboutPage",
   "name": "About DATELINE Live Wire",
-  "url": "https://www.datelinelivewire.com/about.html",
+  "url": "https://dateline-live-wire.vercel.app/about.html",
   "description": "DATELINE Live Wire is a fast, distraction-free news reader pulling live headlines across nine categories, plus real-time weather.",
-  "isPartOf": { "@id": "https://www.datelinelivewire.com/#website" },
+  "isPartOf": { "@id": "https://dateline-live-wire.vercel.app/#website" },
   "publisher": {
     "@type": "Organization",
     "name": "DATELINE Live Wire",
-    "url": "https://www.datelinelivewire.com/"
+    "url": "https://dateline-live-wire.vercel.app/"
   }
 }
 </script>
@@ -52,8 +54,8 @@
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
-    { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.datelinelivewire.com/" },
-    { "@type": "ListItem", "position": 2, "name": "About", "item": "https://www.datelinelivewire.com/about.html" }
+    { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://dateline-live-wire.vercel.app/" },
+    { "@type": "ListItem", "position": 2, "name": "About", "item": "https://dateline-live-wire.vercel.app/about.html" }
   ]
 }
 </script>
@@ -94,10 +96,33 @@
         fast, distraction-free way to scan what's happening before clicking
         through to read the full story on the original publisher's site.
       </p>
+
+      <h2 class="font-display text-lg text-paper mt-8 mb-2">How the wire works</h2>
+      <p>
+        DATELINE does not employ reporters and does not write, edit, or
+        rewrite news copy — every headline, thumbnail, and short summary
+        shown on the site is pulled directly from the publisher's own page
+        (via their public og:image and meta-description tags) and links back
+        to that publisher. We don't claim authorship of any article; think
+        of DATELINE as a reading lens over the public wire, not a newsroom.
+        For anything you plan to act on — medical, financial, or otherwise —
+        always read the full story on the original publisher's site.
+      </p>
+
       <h2 class="font-display text-lg text-paper mt-8 mb-2">Contact</h2>
-      <p>Questions, feedback, or a broken link to report? Reach out at
-      <a href="mailto:nh6639741@gmail.com" class="text-brass hover:underline">nh6639741@gmail.com</a>.</p>
+      <p>Questions, feedback, or a broken link to report? Visit our
+      <a href="/contact.html" class="text-brass hover:underline">Contact page</a> or email
+      <a href="mailto:nh6639741@gmail.com" class="text-brass hover:underline">nh6639741@gmail.com</a> directly.
+      See also our <a href="/terms.html" class="text-brass hover:underline">Terms of Use</a> and
+      <a href="/privacy.html" class="text-brass hover:underline">Privacy Policy</a>.</p>
     </div>
+
+    <nav class="mt-12 pt-6 border-t border-hair flex items-center gap-x-6 gap-y-2 flex-wrap" aria-label="Footer">
+      <a href="/" class="font-mono text-xs uppercase tracking-wider text-mute hover:text-brass transition-colors">Home</a>
+      <a href="/contact.html" class="font-mono text-xs uppercase tracking-wider text-mute hover:text-brass transition-colors">Contact</a>
+      <a href="/terms.html" class="font-mono text-xs uppercase tracking-wider text-mute hover:text-brass transition-colors">Terms</a>
+      <a href="/privacy.html" class="font-mono text-xs uppercase tracking-wider text-mute hover:text-brass transition-colors">Privacy</a>
+    </nav>
   </div>
 </body>
 </html>

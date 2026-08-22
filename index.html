@@ -11,7 +11,7 @@
 <meta name="keywords" content="live news, breaking news, world news, Pakistan news, business news, technology news, sports news, gold rate calculator, zakat calculator, currency converter, news wire" />
 <meta name="author" content="DATELINE Live Wire" />
 <meta name="robots" content="index, follow, max-image-preview:large" />
-<link rel="canonical" href="https://www.datelinelivewire.com/" />
+<link rel="canonical" href="https://dateline-live-wire.vercel.app/" />
 <meta name="theme-color" content="#0B0C0E" />
 
 <!-- ============ OPEN GRAPH ============ -->
@@ -19,8 +19,8 @@
 <meta property="og:site_name" content="DATELINE Live Wire" />
 <meta property="og:title" content="DATELINE Live Wire — Real-Time World News, Headlines &amp; Markets" />
 <meta property="og:description" content="Live headlines across World, Pakistan, Business, Technology, Science, Health, Entertainment and Sports — plus real-time weather and market rates." />
-<meta property="og:url" content="https://www.datelinelivewire.com/" />
-<meta property="og:image" content="https://www.datelinelivewire.com/og-image.jpg" />
+<meta property="og:url" content="https://dateline-live-wire.vercel.app/" />
+<meta property="og:image" content="https://dateline-live-wire.vercel.app/og-image.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:image:alt" content="DATELINE Live Wire — real-time news reader" />
@@ -30,7 +30,7 @@
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="DATELINE Live Wire — Real-Time World News, Headlines &amp; Markets" />
 <meta name="twitter:description" content="Live headlines across World, Pakistan, Business, Technology, Science, Health, Entertainment and Sports — plus real-time weather and market rates." />
-<meta name="twitter:image" content="https://www.datelinelivewire.com/og-image.jpg" />
+<meta name="twitter:image" content="https://dateline-live-wire.vercel.app/og-image.png" />
 <meta name="twitter:image:alt" content="DATELINE Live Wire — real-time news reader" />
 
 <!-- ============ FAVICONS ============ -->
@@ -44,14 +44,14 @@
 {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  "@id": "https://www.datelinelivewire.com/#website",
+  "@id": "https://dateline-live-wire.vercel.app/#website",
   "name": "DATELINE Live Wire",
-  "url": "https://www.datelinelivewire.com/",
-  "description": "A live news and current affairs reader with real-time headlines, weather and market tools.",
-  "publisher": { "@id": "https://www.datelinelivewire.com/#organization" },
+  "url": "https://dateline-live-wire.vercel.app/",
+  "description": "A live news and current affairs reader with real-time headlines, weather and market tools. Headlines are aggregated from public Google News RSS feeds; DATELINE does not author news content.",
+  "publisher": { "@id": "https://dateline-live-wire.vercel.app/#organization" },
   "potentialAction": {
     "@type": "SearchAction",
-    "target": "https://www.datelinelivewire.com/?q={search_term_string}",
+    "target": "https://dateline-live-wire.vercel.app/?q={search_term_string}",
     "query-input": "required name=search_term_string"
   }
 }
@@ -60,10 +60,11 @@
 {
   "@context": "https://schema.org",
   "@type": "Organization",
-  "@id": "https://www.datelinelivewire.com/#organization",
+  "@id": "https://dateline-live-wire.vercel.app/#organization",
   "name": "DATELINE Live Wire",
-  "url": "https://www.datelinelivewire.com/",
-  "logo": "https://www.datelinelivewire.com/logo.png",
+  "url": "https://dateline-live-wire.vercel.app/",
+  "logo": "https://dateline-live-wire.vercel.app/logo-512.png",
+  "email": "nh6639741@gmail.com",
   "sameAs": []
 }
 </script>
@@ -72,7 +73,7 @@
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   "itemListElement": [
-    { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://www.datelinelivewire.com/" }
+    { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://dateline-live-wire.vercel.app/" }
   ]
 }
 </script>
@@ -489,6 +490,75 @@
       <p class="text-mute text-sm">Try another search term or pick a category above.</p>
     </div>
 
+    <!-- ============ STATIC "ABOUT THIS WIRE" CONTENT ============
+         Always rendered server-side (not injected by JS), so there is
+         substantial, original text on the page even if a crawler does
+         not execute JavaScript. Also gives real human readers context
+         on what DATELINE is and how each category feed is sourced. -->
+    <section aria-labelledby="aboutWireHeading" class="mt-16 pt-10 border-t border-hair">
+      <h2 id="aboutWireHeading" class="font-display text-xl sm:text-2xl font-medium text-paper mb-3">What is DATELINE Live Wire?</h2>
+      <p class="text-paper/80 text-sm leading-relaxed max-w-3xl mb-4">
+        DATELINE Live Wire is a free, distraction-free news reader. It pulls
+        live public headlines from Google News' RSS feeds across nine
+        categories, shows each story's real publisher thumbnail and summary
+        where available, and links straight out to the original article on
+        the publisher's own site — DATELINE does not host, rewrite, or
+        republish full articles. Alongside the headlines, the site shows
+        live local weather (via Open-Meteo), a scrolling market ticker, and
+        a set of quick financial calculators (gold rate, zakat, currency
+        conversion, loan EMI) for everyday reference.
+      </p>
+      <p class="text-paper/80 text-sm leading-relaxed max-w-3xl mb-10">
+        Because every headline, image and summary below comes from a
+        third-party publisher, always treat the <strong>publisher's own
+        page</strong> — reached via each story's "Read full story" link —
+        as the authoritative source, especially for health, financial or
+        breaking-news topics. See our <a href="/about.html" class="text-brass hover:underline">About page</a>
+        for more on how the site works and our <a href="/privacy.html" class="text-brass hover:underline">Privacy Policy</a>
+        for how (little) data we handle.
+      </p>
+
+      <h3 class="font-display text-lg text-paper mb-4">Categories on the wire</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-5 max-w-5xl">
+        <div>
+          <p class="font-mono text-[11px] uppercase tracking-wider text-brass mb-1">Top Headlines</p>
+          <p class="text-paper/70 text-xs leading-relaxed">The day's most prominent stories across all topics, as ranked by Google News.</p>
+        </div>
+        <div>
+          <p class="font-mono text-[11px] uppercase tracking-wider text-brass mb-1">World</p>
+          <p class="text-paper/70 text-xs leading-relaxed">International affairs, diplomacy and major events from around the globe.</p>
+        </div>
+        <div>
+          <p class="font-mono text-[11px] uppercase tracking-wider text-brass mb-1">Pakistan</p>
+          <p class="text-paper/70 text-xs leading-relaxed">National headlines from Pakistan's public news wire, refreshed continuously.</p>
+        </div>
+        <div>
+          <p class="font-mono text-[11px] uppercase tracking-wider text-brass mb-1">Business</p>
+          <p class="text-paper/70 text-xs leading-relaxed">Markets, companies, trade and economic policy — paired with the live FX/gold ticker above.</p>
+        </div>
+        <div>
+          <p class="font-mono text-[11px] uppercase tracking-wider text-brass mb-1">Technology</p>
+          <p class="text-paper/70 text-xs leading-relaxed">Product launches, software, AI and the wider tech industry.</p>
+        </div>
+        <div>
+          <p class="font-mono text-[11px] uppercase tracking-wider text-brass mb-1">Science</p>
+          <p class="text-paper/70 text-xs leading-relaxed">Research, space, climate and discovery coverage from public science reporting.</p>
+        </div>
+        <div>
+          <p class="font-mono text-[11px] uppercase tracking-wider text-brass mb-1">Health</p>
+          <p class="text-paper/70 text-xs leading-relaxed">Public-health and medical news. For medical decisions, always verify against the original publisher and a qualified professional — see our disclaimer in <a href="/terms.html" class="text-brass hover:underline">Terms of Use</a>.</p>
+        </div>
+        <div>
+          <p class="font-mono text-[11px] uppercase tracking-wider text-brass mb-1">Entertainment</p>
+          <p class="text-paper/70 text-xs leading-relaxed">Film, TV, music and celebrity news as reported by public outlets.</p>
+        </div>
+        <div>
+          <p class="font-mono text-[11px] uppercase tracking-wider text-brass mb-1">Sports</p>
+          <p class="text-paper/70 text-xs leading-relaxed">Scores, transfers and results coverage from the sports wire.</p>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <!-- ============ ARTICLE MODAL ============ -->
@@ -542,6 +612,8 @@
         <nav class="flex items-center gap-x-6 gap-y-2 flex-wrap justify-center" aria-label="Footer">
           <a href="/" class="font-mono text-xs uppercase tracking-wider text-mute hover:text-brass transition-colors">Home</a>
           <a href="/about.html" class="font-mono text-xs uppercase tracking-wider text-mute hover:text-brass transition-colors">About</a>
+          <a href="/contact.html" class="font-mono text-xs uppercase tracking-wider text-mute hover:text-brass transition-colors">Contact</a>
+          <a href="/terms.html" class="font-mono text-xs uppercase tracking-wider text-mute hover:text-brass transition-colors">Terms</a>
           <a href="/privacy.html" class="font-mono text-xs uppercase tracking-wider text-mute hover:text-brass transition-colors">Privacy</a>
         </nav>
         <p class="font-mono text-[11px] text-mute/60">&copy; <span id="footerYear"></span> DATELINE</p>
